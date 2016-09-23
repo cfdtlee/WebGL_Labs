@@ -26,7 +26,10 @@ function processData(csv) {
     var allTextLines = csv.split(/\r\n|\n/);
     var lines = [];
     while (allTextLines.length) {
-        lines.push(allTextLines.shift().split(','));
+    	var temp = allTextLines.shift();
+    	if (temp.length > 0) {
+    		lines.push(temp.split(','));
+    	}
     }
 	console.log(lines);
     drawOutput(lines);

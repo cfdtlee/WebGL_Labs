@@ -31,36 +31,72 @@ var num_vertices;
 var num_indices;
 
 function createBarVertices(avgs) {
-    var num_bars = avgs.length;
+    var num_bars = avgs.length * avgs[0].length;
     num_vertices = num_bars * 4;
     num_indices = num_bars * 6;
 
     var min, max;
     var width; 
-    min = Number(avgs[0]);  max = Number(avgs[0]); 
-       // find min and max 
-    for (var i=0; i<num_bars; i++) {
-        console.log( "val = " + avgs[i]); 
-        if (Number(avgs[i]) < min) min = Number(avgs[i]);
-        if (Number(avgs[i]) > max) max = Number(avgs[i]); 
-    } 
-    width = max-min; 
+    min = avgs[0][0];
+    max = avgs[0][0];
+    // find min and max 
+    for (var i=0; i<avgs.length; i++) {
+        for (var j = 0; j < avgs[0].length; j++) {
+            min = Math.min(avgs[i][j], min);
+            max = Math.max(avgs[i][j], max);
+        }
+        // console.log( "val = " + avgs[i]); 
+        // if (Number(avgs[i]) < min) min = Number(avgs[i]);
+        // if (Number(avgs[i]) > max) max = Number(avgs[i]); 
+    }
+    // width = max-min; 
     console.log("min = "+min+" max = "+max);
 
     //	console.log(num_vertices+"  "+num_indices); 
 
-    var v_margin = 0.25; 
     var h = 2/(3*num_bars+1); 
-    for (var i =0; i<num_bars; i++) {
+    var v_margin = 0.25; 
+    var width = (2 - v_margin * avgs.length) / avgs[0].length / avgs[0].length;
+    for (var i = 0; i < avgs.length; i++) {
+        for (var j = 0; j < avgs[0].length; j++) {
+            // down left 
+            vertices.push((i+1) * v_margin + (j + i*avgs.length) * width - 1);
+            vertices.push(v_margin - 1);
+            vertices.push(0.0);
 
-        vertices.push(-1+(3*i+1)*h); vertices.push(-1+  v_margin); vertices.push(0.0);
-        vertices.push(-1+(3*i+3)*h); vertices.push(-1+  v_margin); vertices.push(0.0);
-        vertices.push(-1+(3*i+3)*h); vertices.push(-1+v_margin+(2-2*v_margin)*(avgs[i]-min)/width); vertices.push(0.0);
-        vertices.push(-1+(3*i+1)*h); vertices.push(-1+v_margin+(2-2*v_margin)*(avgs[i]-min)/width); vertices.push(0.0);
-        
-        indices.push(0+4*i);  indices.push(1+4*i);  indices.push(2+4*i);
-        indices.push(0+4*i);  indices.push(2+4*i);  indices.push(3+4*i); 	    
+            // upper left
+            vertices.push((i+1) * v_margin + (j + i*avgs.length) * width - 1);
+            vertices.push(avgs[i][j] / max * (2 - 2*v_margin) - 1 + v_margin);
+            vertices.push(0.0);
+
+            // down right
+            vertices.push((i+1) * v_margin + ((j + i*avgs.length)+1) * width - 1);
+            vertices.push(v_margin - 1);
+            vertices.push(0.0);
+
+            // upper right
+            vertices.push((i+1) * v_margin + ((j + i*avgs.length)+1) * width - 1);
+            vertices.push(avgs[i][j] / max * (2 - 2*v_margin) - 1 + v_margin);
+            vertices.push(0.0);
+
+            indices.push(0+4*(i*avgs[0].length+j));  indices.push(1+4*(i*avgs[0].length+j));  indices.push(2+4*(i*avgs[0].length+j));
+            indices.push(1+4*(i*avgs[0].length+j));  indices.push(2+4*(i*avgs[0].length+j));  indices.push(3+4*(i*avgs[0].length+j));
+        }
     }
+
+
+
+    
+    // for (var i =0; i<num_bars; i++) {
+
+    //     vertices.push(-1+(3*i+1)*h); vertices.push(-1+  v_margin); vertices.push(0.0);
+    //     vertices.push(-1+(3*i+3)*h); vertices.push(-1+  v_margin); vertices.push(0.0);
+    //     vertices.push(-1+(3*i+3)*h); vertices.push(-1+v_margin+(2-2*v_margin)*(avgs[i]-min)/width); vertices.push(0.0);
+    //     vertices.push(-1+(3*i+1)*h); vertices.push(-1+v_margin+(2-2*v_margin)*(avgs[i]-min)/width); vertices.push(0.0);
+        
+    //     indices.push(0+4*i);  indices.push(1+4*i);  indices.push(2+4*i);
+    //     indices.push(0+4*i);  indices.push(2+4*i);  indices.push(3+4*i); 	    
+    // }
 
     initBuffers(); 
 
@@ -138,6 +174,7 @@ function drawScene() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer); 
     setMatrixUniforms();
     gl.drawElements(gl.TRIANGLES, num_indices, gl.UNSIGNED_SHORT, 0);
+    // gl.drawElements(gl.TRIANGLES, 12, gl.UNSIGNED_SHORT, 18*2);//??????
 
 }
 
