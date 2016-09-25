@@ -27,13 +27,24 @@ var squareVertexIndexBuffer;
 
 var vertices = []; 
 var indices = [];
+var colors = [];
 var num_vertices; 
 var num_indices;
+var num_colors;
+var colors_list = [26/256, 188/256, 156/256,1.0,
+                   46/256, 204/256, 113/256,1.0,
+                   52/256, 152/256, 219/256,1.0,
+                   155/256, 89/256, 182/256,1.0,
+                   52/256, 73/256, 94/256,1.0,
+                   241/256, 196/256, 15/256,1.0,
+                   230/256, 126/256, 34/256,1.0,
+                   231/256, 76/256, 60/256,1.0];
 
 function createBarVertices(avgs) {
     var num_bars = avgs.length * avgs[0].length;
     num_vertices = num_bars * 4;
     num_indices = num_bars * 6;
+    num_colors = num_bars * 4;
 
     var min, max;
     var width; 
@@ -81,6 +92,12 @@ function createBarVertices(avgs) {
 
             indices.push(0+4*(i*avgs[0].length+j));  indices.push(1+4*(i*avgs[0].length+j));  indices.push(2+4*(i*avgs[0].length+j));
             indices.push(1+4*(i*avgs[0].length+j));  indices.push(2+4*(i*avgs[0].length+j));  indices.push(3+4*(i*avgs[0].length+j));
+
+            colors = colors.concat(colors_list.slice(j*4, j*4+4));
+            colors = colors.concat(colors_list.slice(j*4, j*4+4));
+            colors = colors.concat(colors_list.slice(j*4, j*4+4));
+            colors = colors.concat(colors_list.slice(j*4, j*4+4));
+
         }
     }
 
@@ -112,6 +129,12 @@ function initBuffers() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     squareVertexPositionBuffer.itemSize = 3;
     squareVertexPositionBuffer.numItems = num_vertices;
+
+    squareVertexColorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    squareVertexColorBuffer.itemSize = 4;
+    squareVertexColorBuffer.numItems = num_colors; 
 
   	squareVertexIndexBuffer = gl.createBuffer();	
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer); 
@@ -170,12 +193,14 @@ function drawScene() {
     gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexPositionBuffer);
     gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, squareVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, squareVertexColorBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute,squareVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
     // draw elementary arrays - triangle indices 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer); 
     setMatrixUniforms();
-    gl.drawElements(gl.TRIANGLES, num_indices, gl.UNSIGNED_SHORT, 0);
-    // gl.drawElements(gl.TRIANGLES, 12, gl.UNSIGNED_SHORT, 18*2);//??????
-
+    gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    
 }
 
 
@@ -260,15 +285,17 @@ function webGLStart() {
     initGL(canvas);
     initShaders();
 
-    shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+    // shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+    // gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
 
-    shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-
+    // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 //        initBuffers(); 
+    
+    // shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+    // gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
    document.addEventListener('mousedown', onDocumentMouseDown,false);
    document.addEventListener('keydown', onKeyDown, false); 
