@@ -24,13 +24,28 @@ function initGL(canvas) {
 var squareVertexPositionBuffer;
 var squareVertexColorBuffer;
 var squareVertexIndexBuffer;
+var legendVertexPositionBuffer;
+var legendVertexColorBuffer;
+var lineVertexPositionBuffer;
+var lineVertexColorBuffer;
 
 var vertices = []; 
 var indices = [];
 var colors = [];
+var legends = [];
+var legendsColors = [];
+var lines = [];
+var linesColors = [];
 var num_vertices; 
 var num_indices;
 var num_colors;
+var num_legend;
+
+var mode = 0;
+
+var v_margin = 0.25; 
+var min, max;
+
 var colors_list = [26/256, 188/256, 156/256,1.0,
                    46/256, 204/256, 113/256,1.0,
                    52/256, 152/256, 219/256,1.0,
@@ -45,8 +60,8 @@ function createBarVertices(avgs) {
     num_vertices = num_bars * 4;
     num_indices = num_bars * 6;
     num_colors = num_bars * 4;
+    num_legend = avgs[0].length;
 
-    var min, max;
     var width; 
     min = avgs[0][0];
     max = avgs[0][0];
@@ -61,12 +76,11 @@ function createBarVertices(avgs) {
         // if (Number(avgs[i]) > max) max = Number(avgs[i]); 
     }
     // width = max-min; 
-    console.log("min = "+min+" max = "+max);
+    // console.log("min = "+min+" max = "+max);
 
     //	console.log(num_vertices+"  "+num_indices); 
 
     var h = 2/(3*num_bars+1); 
-    var v_margin = 0.25; 
     var width = (2 - v_margin * avgs.length) / avgs[0].length / avgs[0].length;
     for (var i = 0; i < avgs.length; i++) {
         for (var j = 0; j < avgs[0].length; j++) {
@@ -97,10 +111,24 @@ function createBarVertices(avgs) {
             colors = colors.concat(colors_list.slice(j*4, j*4+4));
             colors = colors.concat(colors_list.slice(j*4, j*4+4));
             colors = colors.concat(colors_list.slice(j*4, j*4+4));
-
         }
     }
 
+    for (var i = 0; i < avgs[0].length; i++) {
+        legends.push(0.7);
+        legends.push(0.9-0.06*i);
+        legends.push(0.0);
+        legendsColors = legendsColors.concat(colors_list.slice(i*4, i*4+4));
+    }
+
+    lines = [v_margin/2 - 1, v_margin - 1, 0.0,
+             1 - v_margin, v_margin - 1, 0.0,
+             v_margin/2 - 1, v_margin - 1, 0.0,
+             v_margin/2 - 1, 1 - v_margin, 0.0,];
+    linesColors = [44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0];
 
 
     
@@ -139,8 +167,32 @@ function initBuffers() {
   	squareVertexIndexBuffer = gl.createBuffer();	
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer); 
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);  
-    squareVertexIndexBuffer.itemsize = 1;
-    squareVertexIndexBuffer.numItems = num_indices; 
+    squareVertexIndexBuffer.itemSize = 1;
+    squareVertexIndexBuffer.numItems = num_indices;
+
+    legendVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, legendVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(legends), gl.STATIC_DRAW);
+    legendVertexPositionBuffer.itemSize = 3;
+    legendVertexPositionBuffer.numItems = num_legend;
+
+    legendVertexColorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, legendVertexColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(legendsColors), gl.STATIC_DRAW);
+    legendVertexColorBuffer.itemSize = 4;
+    legendVertexColorBuffer.numItems = num_legend;
+
+    lineVertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+    lineVertexPositionBuffer.itemSize = 3;
+    lineVertexPositionBuffer.numItems = lines.length / 3;
+
+    lineVertexColorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(linesColors), gl.STATIC_DRAW);
+    lineVertexColorBuffer.itemSize = 4;
+    lineVertexColorBuffer.numItems = linesColors.length / 4;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -181,12 +233,28 @@ var mvMatrixStack = [];
 ///////////////////////////////////////////////////////////////////////
 
 function drawScene() {
+    var legendDiv = $("#legends")
+    legendDiv.empty();
+    for (var i = 1; i < titles.length; i++) {
+        legendDiv.append("<div><span>" + titles[i] + "</span></div>")
+    }
+    
+    var titlesDiv = $("#titles");
+    titlesDiv.empty();
+    var i = 0;
+    for (var key in typesMap) {
+        titleDiv = "<div style='left: "+i*170+"px; position:absolute;'>"+key+"</div>";
+        // titleDiv.css({top: 600+'px', left: 200*i+'px', position: 'absolute'});
+        titlesDiv.append(titleDiv);
+        i++;
+    }
+
 
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     mat4.identity(mvMatrix);
-    console.log('Z angle = '+ Z_angle); 
+    // console.log('Z angle = '+ Z_angle); 
     mvMatrix = mat4.rotate(mvMatrix, degToRad(Z_angle), [0, 0, 1]); 
 
 
@@ -199,10 +267,83 @@ function drawScene() {
     // draw elementary arrays - triangle indices 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, squareVertexIndexBuffer); 
     setMatrixUniforms();
-    gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+    switch(mode) {
+        case 0: gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0); break;
+        case 1: gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems/3, gl.UNSIGNED_SHORT, 0); break;
+        case 2: gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems/3, gl.UNSIGNED_SHORT, squareVertexIndexBuffer.numItems/3*2); break;
+        case 3: gl.drawElements(gl.TRIANGLES, squareVertexIndexBuffer.numItems/3, gl.UNSIGNED_SHORT, squareVertexIndexBuffer.numItems/3*4); break;
+    }
     
+    // draw legends
+    gl.bindBuffer(gl.ARRAY_BUFFER, legendVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, legendVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, legendVertexColorBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, legendVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.POINTS, 0, legendVertexPositionBuffer.numItems);
+
+    // draw lines
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, lineVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexColorBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, lineVertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.LINES, 0, lineVertexPositionBuffer.numItems);    
 }
 
+function removeHelpLines() {
+    lines = lines.slice(0, 12);
+    linesColors = linesColors.slice(0, 16);
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+    lineVertexPositionBuffer.itemSize = 3;
+    lineVertexPositionBuffer.numItems = lines.length / 3;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(linesColors), gl.STATIC_DRAW);
+    lineVertexColorBuffer.itemSize = 4;
+    lineVertexColorBuffer.numItems = linesColors.length / 4;
+    drawScene();
+
+    $("#height").empty();
+}
+
+
+function addHelpLines(mouseX, mouseY) {
+    x = -1 + 2 * mouseX / gl.viewportWidth;
+    y = -1 + 2 * (gl.viewportHeight - mouseY) / gl.viewportHeight;
+    // y = 0;
+    console.log("mouseX, mouseY:" + mouseX + mouseY);
+    lines = lines.slice(0, 12).concat([v_margin/2 - 1, y, 0.0,
+                                       x, y, 0.0,
+                                       x, v_margin - 1, 0.0,
+                                       x, y, 0.0,]);
+    linesColors = linesColors.slice(0, 16).concat([149/256, 165/256, 166/256, 1.0,
+                                                  149/256, 165/256, 166/256, 1.0,
+                                                  149/256, 165/256, 166/256, 1.0,
+                                                  149/256, 165/256, 166/256, 1.0]);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexPositionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+    lineVertexPositionBuffer.itemSize = 3;
+    lineVertexPositionBuffer.numItems = lines.length / 3;
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexColorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(linesColors), gl.STATIC_DRAW);
+    lineVertexColorBuffer.itemSize = 4;
+    lineVertexColorBuffer.numItems = linesColors.length / 4;
+
+    drawScene();
+
+    var heightDiv = $("#height");
+    heightDiv.empty();
+    var h = (2*(gl.viewportHeight - mouseY) / gl.viewportHeight - v_margin) * max / (2 - 2*v_margin);
+    heightDiv.append("<div><span>" + h.toFixed(2) + "</span></div>"); 
+    console.log("heightDiv:" + heightDiv);
+    // legendDiv.append("<div><span>" + h + "</span></div>")
+    heightDiv.parent().css({position: 'relative'});
+    heightDiv.css({top: mouseY+'px', left: mouseX+'px', position: 'absolute'});
+}
 
 ///////////////////////////////////////////////////////////////
 
@@ -221,30 +362,35 @@ function onDocumentMouseDown( event ) {
 
     lastMouseX = mouseX;
     lastMouseY = mouseY; 
+
+    addHelpLines(mouseX, mouseY);
+
 }
 
 function onDocumentMouseMove( event ) {
     var mouseX = event.clientX;
-    var mouseY = event.ClientY; 
+    var mouseY = event.clientY; 
 
     var diffX = mouseX - lastMouseX;
     var diffY = mouseY - lastMouseY;
 
-    Z_angle = Z_angle + diffX/5;
+    // Z_angle = Z_angle + diffX/5;
 
     lastMouseX = mouseX;
     lastMouseY = mouseY;
 
-    drawScene();
+    addHelpLines(mouseX, mouseY);    
  }
 
 function onDocumentMouseUp( event ) {
+    removeHelpLines();
     document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
     document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
     document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
 }
 
 function onDocumentMouseOut( event ) {
+    removeHelpLines();
     document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
     document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
     document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
@@ -309,6 +455,11 @@ function BG(red, green, blue) {
     drawScene(); 
 
 } 
+
+function setMode(m) {
+    mode = m;
+    drawScene();
+}
 
 
 function redraw() {

@@ -4,7 +4,7 @@ var has_avgs = false;
 var avgs = [];
 var typesMap = {};
 var sss;
-var ttt;
+var titles;
 
 function set_data(lines) {
     data = lines;
@@ -42,7 +42,7 @@ function csv_draw_bars() {
 	  //   } 
 	}
 	var t = 0; // t is type index
-	ttt = data.shift();
+	titles = data.shift();
 	for (var key in typesMap) 
 	{
 		// key = "virginica";
