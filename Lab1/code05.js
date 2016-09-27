@@ -75,10 +75,6 @@ function createBarVertices(avgs) {
         // if (Number(avgs[i]) < min) min = Number(avgs[i]);
         // if (Number(avgs[i]) > max) max = Number(avgs[i]); 
     }
-    // width = max-min; 
-    // console.log("min = "+min+" max = "+max);
-
-    //	console.log(num_vertices+"  "+num_indices); 
 
     var h = 2/(3*num_bars+1); 
     var width = (2 - v_margin * avgs.length) / avgs[0].length / avgs[0].length;
@@ -116,16 +112,44 @@ function createBarVertices(avgs) {
 
     for (var i = 0; i < avgs[0].length; i++) {
         legends.push(0.7);
-        legends.push(0.9-0.06*i);
+        legends.push(0.79-0.10*i);
         legends.push(0.0);
         legendsColors = legendsColors.concat(colors_list.slice(i*4, i*4+4));
     }
 
-    lines = [v_margin/2 - 1, v_margin - 1, 0.0,
-             1 - v_margin, v_margin - 1, 0.0,
-             v_margin/2 - 1, v_margin - 1, 0.0,
-             v_margin/2 - 1, 1 - v_margin, 0.0,];
+    lines = [v_margin/2 - 1, v_margin - 1, 0.0, // original
+             1 - v_margin/2, v_margin - 1, 0.0, // right buttom
+             v_margin/2 - 1, v_margin - 1, 0.0, // original
+             v_margin/2 - 1, 1 - v_margin/2, 0.0, // left up
+             v_margin/2 - 1 - 0.02, 1 - v_margin/2, 0.0,
+             v_margin/2 - 1 + 0.02, 1 - v_margin/2, 0.0,
+             v_margin/2 - 1 - 0.02, 1 - v_margin/2, 0.0,
+             v_margin/2 - 1, 1 - v_margin/2 + 0.1, 0.0,
+             v_margin/2 - 1 + 0.02, 1 - v_margin/2, 0.0,
+             v_margin/2 - 1, 1 - v_margin/2 + 0.1, 0.0,
+
+             1 - v_margin/2, v_margin - 1 - 0.03, 0.0, 
+             1 - v_margin/2, v_margin - 1 + 0.03, 0.0, 
+             1 - v_margin/2, v_margin - 1 - 0.03, 0.0, 
+             1 - v_margin/2 + 0.07, v_margin - 1, 0.0, 
+             1 - v_margin/2, v_margin - 1 + 0.03, 0.0, 
+             1 - v_margin/2 + 0.07, v_margin - 1, 0.0, 
+
+
+             ];
     linesColors = [44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
+                  44/256, 62/256, 80/256, 1.0,
                   44/256, 62/256, 80/256, 1.0,
                   44/256, 62/256, 80/256, 1.0,
                   44/256, 62/256, 80/256, 1.0];
@@ -292,8 +316,8 @@ function drawScene() {
 }
 
 function removeHelpLines() {
-    lines = lines.slice(0, 12);
-    linesColors = linesColors.slice(0, 16);
+    lines = lines.slice(0, 3*16);
+    linesColors = linesColors.slice(0, 4*16);
     gl.bindBuffer(gl.ARRAY_BUFFER, lineVertexPositionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
     lineVertexPositionBuffer.itemSize = 3;
@@ -314,11 +338,11 @@ function addHelpLines(mouseX, mouseY) {
     y = -1 + 2 * (gl.viewportHeight - mouseY) / gl.viewportHeight;
     // y = 0;
     console.log("mouseX, mouseY:" + mouseX + mouseY);
-    lines = lines.slice(0, 12).concat([v_margin/2 - 1, y, 0.0,
+    lines = lines.slice(0, 3*16).concat([v_margin/2 - 1, y, 0.0,
                                        x, y, 0.0,
                                        x, v_margin - 1, 0.0,
                                        x, y, 0.0,]);
-    linesColors = linesColors.slice(0, 16).concat([149/256, 165/256, 166/256, 1.0,
+    linesColors = linesColors.slice(0, 4*16).concat([149/256, 165/256, 166/256, 1.0,
                                                   149/256, 165/256, 166/256, 1.0,
                                                   149/256, 165/256, 166/256, 1.0,
                                                   149/256, 165/256, 166/256, 1.0]);
