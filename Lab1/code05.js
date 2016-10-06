@@ -1,7 +1,7 @@
 
 var gl;
 var shaderProgram;
-var draw_type=2;
+var draw_type = 2;
 
 //////////// Init OpenGL Context etc. ///////////////
 
@@ -46,14 +46,14 @@ var mode = 0;
 var v_margin = 0.25; 
 var min, max;
 
-var colors_list = [26/256, 188/256, 156/256,1.0,
-                   46/256, 204/256, 113/256,1.0,
-                   52/256, 152/256, 219/256,1.0,
-                   155/256, 89/256, 182/256,1.0,
-                   52/256, 73/256, 94/256,1.0,
-                   241/256, 196/256, 15/256,1.0,
-                   230/256, 126/256, 34/256,1.0,
-                   231/256, 76/256, 60/256,1.0];
+var colors_list = [26/256, 188/256, 156/256, 1.0,
+                   46/256, 204/256, 113/256, 1.0,
+                   52/256, 152/256, 219/256, 1.0,
+                   155/256, 89/256, 182/256, 1.0,
+                   52/256, 73/256, 94/256, 1.0,
+                   241/256, 196/256, 15/256, 1.0,
+                   230/256, 126/256, 34/256, 1.0,
+                   231/256, 76/256, 60/256, 1.0];
 
 function createBarVertices(avgs) {
     var num_bars = avgs.length * avgs[0].length;
@@ -222,12 +222,13 @@ function initBuffers() {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////
 
-
+var pMatrix = mat4.create();
 var mvMatrix = mat4.create();
 var Z_angle = 0.0;
-var Xtranslate = 0.0, Ytranslate = 0.0; 
+var Xtranslate = 0.0, Ytranslate = 0.0;
 
 function setMatrixUniforms() {
+    // gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
     gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 }
 
@@ -277,6 +278,7 @@ function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
     mat4.identity(mvMatrix);
     // console.log('Z angle = '+ Z_angle); 
     mvMatrix = mat4.rotate(mvMatrix, degToRad(Z_angle), [0, 0, 1]); 
@@ -454,16 +456,6 @@ function webGLStart() {
     var canvas = document.getElementById("code05-canvas");
     initGL(canvas);
     initShaders();
-
-    // shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-    // gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-
-    // shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-//        initBuffers(); 
-    
-    // shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-    // gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
 
