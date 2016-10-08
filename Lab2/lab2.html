@@ -189,6 +189,69 @@
         return degrees * Math.PI / 180;
     }
 
+    var currentlyPressedKeys = {};
+    // var xPosition = 1;
+    var moveRotation = 1;
+    var moveDirection = 1;
+    var rTri = 0;
+    var rSquare = 0;
+    var xSpeed = 0;
+    var ySpeed = 0;
+    var xPosition = 0;
+    var yPosition = 0;
+
+    function handleKeyDown(event) {
+        currentlyPressedKeys[event.keyCode] = true;
+
+        // if (String.fromCharCode(event.keyCode) == "F") {
+        //     filter += 1;
+        //     if (filter == 3) {
+        //         filter = 0;
+        //     }
+        // }
+    }
+
+
+    function handleKeyUp(event) {
+        currentlyPressedKeys[event.keyCode] = false;
+    }
+
+
+    function handleKeys() {
+        // if (currentlyPressedKeys[33]) {
+        //     // Page Up
+        //     z -= 0.05;
+        // }
+        // if (currentlyPressedKeys[34]) {
+        //     // Page Down
+        //     z += 0.05;
+        // }
+        if (currentlyPressedKeys[37]) {
+            // Left cursor key
+            if (xSpeed > -5) {
+                xSpeed -= 0.2;
+            }
+        }
+        if (currentlyPressedKeys[39]) {
+            // Right cursor key
+            if (xSpeed < 5) {
+                xSpeed += 0.2;
+            }
+        }
+        if (currentlyPressedKeys[38]) {
+            // Up cursor key
+            if (ySpeed < 5) {
+                ySpeed += 0.2;
+            }
+        }
+        if (currentlyPressedKeys[40]) {
+            // Down cursor key
+            if (ySpeed > -5) {
+                ySpeed -= 0.2;
+            }
+        }
+    }
+
 
     var triangleVertexPositionBuffer;
     var triangleVertexTextureCoordBuffer;
@@ -274,12 +337,7 @@
     }
 
 
-    var verticalMove = 0;
-    var moveRotation = 0;
-    var moveDirection = 0;
-    var rTri = 0;
-    var rSquare = 0;
-
+    
     function drawScene() {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -288,7 +346,7 @@
 
         mat4.identity(mvMatrix);
 
-        mat4.translate(mvMatrix, [verticalMove, 0.0, -7.0]);
+        mat4.translate(mvMatrix, [xPosition, yPosition, -7.0]);
         mat4.rotate(mvMatrix, degToRad(moveRotation), [0, 0, 1]);
 
         // draw body
@@ -309,7 +367,7 @@
 
         // draw upScrew
         mvPushMatrix();
-        mat4.translate(mvMatrix, [-0.087, 0.65, 0.1]);
+        mat4.translate(mvMatrix, [-0.102, 0.65, 0.1]);
         mat4.scale(mvMatrix, [1.0, 1/16, 1.0]);
         mat4.rotate(mvMatrix, degToRad(rTri), [0, 1, 0]);
         // mat4.rotate(mvMatrix, degToRad(90), [0, 0, 1]);
@@ -355,18 +413,24 @@
     var lastTime = 0;
 
     function animate() {
+        // console.log("xSpped: " + xSpeed + " ySpeed: " + ySpeed);
         var timeNow = new Date().getTime();
         if (lastTime != 0) {
             var elapsed = timeNow - lastTime;
-            moveRotation = moveDirection * 30;
-            verticalMove -= moveDirection * (elapsed) / 1000.0;
-            if (verticalMove < -3.8) {
-                verticalMove = -verticalMove;
+            moveRotation = -xSpeed * 6;
+            xPosition += xSpeed * (elapsed) / 1000.0;
+            if (xPosition < -3.8 || xPosition > 3.8) {
+                xPosition = -xPosition;
             }
-            // console.log(verticalMove);
-            rTri += (960 * elapsed) / 1000.0;
+
+            yPosition += ySpeed * (elapsed) / 1000.0;
+            if (yPosition > 3.8 || yPosition < - 3.8) {
+                yPosition = -yPosition;
+            }
+            // console.log(xPosition);
+            rTri += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed));
             // rTri = Math.sin(elapsed) * 45;
-            rSquare += (960 * elapsed) / 1000.0;
+            rSquare += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed));;
         }
         lastTime = timeNow;
     }
@@ -374,6 +438,7 @@
 
     function tick() {
         requestAnimFrame(tick);
+        handleKeys();
         drawScene();
         animate();
     }
@@ -388,6 +453,9 @@
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
+
+        document.onkeydown = handleKeyDown;
+        document.onkeyup = handleKeyUp;
 
         tick();
     }
