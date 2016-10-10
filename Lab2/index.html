@@ -278,7 +278,6 @@
         }
         if (currentlyPressedKeys[65]) {
             // a
-            console.log('ddddd');
             if (starX > -3.8) {
                 starX -= 0.1;
             }
@@ -286,11 +285,14 @@
         }
         if (currentlyPressedKeys[68]) {
             // d
-            console.log('ddddd');
             if (starX < 3.8) {
                 starX += 0.1;
             }
             else starX = -3.8;
+        }
+
+        if (currentlyPressedKeys[82]) {
+            tilt += 1;
         }
 
 
@@ -487,13 +489,6 @@
         this.r = Math.random();
         this.g = Math.random();
         this.b = Math.random();
-
-        // When the star is twinkling, we draw it twice, once
-        // in the color below (not spinning) and then once in the
-        // main color defined above.
-        // this.twinkleR = Math.random();
-        // this.twinkleG = Math.random();
-        // this.twinkleB = Math.random();
     };
 
 
@@ -690,10 +685,12 @@
     <canvas id="lab2-canvas" style="border: none;" width="500" height="500"></canvas>
 
     <br/>
+    <div style="width:500">
     <input type="checkbox" id="autoMode" />Auto Mode<br/>
-    Check auto mode to enable auto animation. Otherwise, you can use w, s, a, d key to move stars, or use up, down, left, right key and i(n), o(ut) key to change the speed of the helicopter. 
-    Hidden game: if you park helicopter on the bottom border, you win.
+    Check auto mode to enable auto animation. Otherwise, you can use w, s, a, d and r(otate) keys to move stars, or use up, down, left, right key and i(n), o(ut) key to change the speed of the helicopter. 
+    <br/>Hidden game: if you park helicopter on the bottom border, you win.
     <br/>
+    </div>
     <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
 </body>
 
