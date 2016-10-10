@@ -14,10 +14,13 @@
     varying vec2 vTextureCoord;
 
     uniform sampler2D uSampler;
+    uniform vec3 uColor;
 
     void main(void) {
         // gl_FragColor = vColor;
-        gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+
+        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+        gl_FragColor = textureColor * vec4(uColor, 1.0);
     }
 </script>
 
@@ -120,6 +123,7 @@
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
         shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
         shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+        shaderProgram.colorUniform = gl.getUniformLocation(shaderProgram, "uColor");
     }
 
     function handleLoadedTexture(texture) {
@@ -158,6 +162,12 @@
         }
         tailTexture.image.src = "tailScrew.png";
 
+        starTexture = gl.createTexture();
+        starTexture.image = new Image();
+        starTexture.image.onload = function () {
+            handleLoadedTexture(starTexture);
+        }
+        starTexture.image.src = "star.gif";
     }
 
 
@@ -197,35 +207,25 @@
     var rSquare = 0;
     var xSpeed = 0;
     var ySpeed = 0;
+    var zSpeed = 0;
     var xPosition = 0;
     var yPosition = 0;
+    var zPosition = -7.0;
+    var starX = 0;
+    var starY = 0;
+
+    var xAutoSpeed = -3;
+    var yAutoSpeed = 0;
 
     function handleKeyDown(event) {
         currentlyPressedKeys[event.keyCode] = true;
-
-        // if (String.fromCharCode(event.keyCode) == "F") {
-        //     filter += 1;
-        //     if (filter == 3) {
-        //         filter = 0;
-        //     }
-        // }
     }
-
 
     function handleKeyUp(event) {
         currentlyPressedKeys[event.keyCode] = false;
     }
 
-
     function handleKeys() {
-        // if (currentlyPressedKeys[33]) {
-        //     // Page Up
-        //     z -= 0.05;
-        // }
-        // if (currentlyPressedKeys[34]) {
-        //     // Page Down
-        //     z += 0.05;
-        // }
         if (currentlyPressedKeys[37]) {
             // Left cursor key
             if (xSpeed > -5) {
@@ -250,6 +250,50 @@
                 ySpeed -= 0.2;
             }
         }
+        if (currentlyPressedKeys[73]) {
+            // i
+            if (zSpeed < 5) {
+                zSpeed += 0.2;
+            }
+        }
+        if (currentlyPressedKeys[79]) {
+            // o
+            if (zSpeed > -5) {
+                zSpeed -= 0.2;
+            }
+        }
+        if (currentlyPressedKeys[87]) {
+            // w
+            if (starY < 3.8) {
+                starY += 0.1;
+            }
+            else starY = -3.8;
+        }
+        if (currentlyPressedKeys[83]) {
+            // s
+            if (starY > -3.8) {
+                starY -= 0.1;
+            }
+            else starY = 3.8;
+        }
+        if (currentlyPressedKeys[65]) {
+            // a
+            console.log('ddddd');
+            if (starX > -3.8) {
+                starX -= 0.1;
+            }
+            else starX = 3.8;
+        }
+        if (currentlyPressedKeys[68]) {
+            // d
+            console.log('ddddd');
+            if (starX < 3.8) {
+                starX += 0.1;
+            }
+            else starX = -3.8;
+        }
+
+
     }
 
 
@@ -259,6 +303,9 @@
     var bodyVertexTextureCoordBuffer;
     var squareVertexPositionBuffer;
     var squareVertexTextureCoordBuffer;
+    var starVertexPositionBuffer;
+    var starVertexTextureCoordBuffer;
+
 
     function initBuffers() {
         triangleVertexPositionBuffer = gl.createBuffer();
@@ -334,9 +381,136 @@
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoord), gl.STATIC_DRAW);
         squareVertexTextureCoordBuffer.itemSize = 2;
         squareVertexTextureCoordBuffer.numItems = 4;
+
+        starVertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexPositionBuffer);
+        vertices = [
+            -1.0, -1.0,  0.0,
+             1.0, -1.0,  0.0,
+            -1.0,  1.0,  0.0,
+             1.0,  1.0,  0.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        starVertexPositionBuffer.itemSize = 3;
+        starVertexPositionBuffer.numItems = 4;
+
+        starVertexTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexTextureCoordBuffer);
+        var textureCoords = [
+            0.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        starVertexTextureCoordBuffer.itemSize = 2;
+        starVertexTextureCoordBuffer.numItems = 4;
+
     }
 
+    function drawStar() {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, starTexture);
+        gl.uniform1i(shaderProgram.samplerUniform, 0);
 
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexTextureCoordBuffer);
+        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, starVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, starVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, starVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        setMatrixUniforms();
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, starVertexPositionBuffer.numItems);
+    }
+
+    // function Star(startingDistance, rotationSpeed) {
+    function Star(i, rotationSpeed) {
+        this.angle = 0;
+        // this.dist = startingDistance;
+        this.rotationSpeed = rotationSpeed;
+        
+        this.x = i/5 * 2.5;
+        this.y = i%5 * 2.5;
+        // Set the colors to a starting value.
+        this.randomiseColors();
+    }
+
+    Star.prototype.draw = function (tilt, spin) {
+        mvPushMatrix();
+
+        // Move to the star's position
+        // mat4.rotate(mvMatrix, degToRad(this.angle), [0.0, 1.0, 0.0]);
+        // mat4.translate(mvMatrix, [this.dist, 0.0, 0.0]);
+
+        // Rotate back so that the star is facing the viewer
+        // mat4.rotate(mvMatrix, degToRad(-this.angle), [0.0, 1.0, 0.0]);
+        // mat4.translate(mvMatrix, [-1.0 + 2 * this.x, -1.0 + this.y, 0]);
+        var isAutoMode = document.getElementById("autoMode").checked;
+        if (isAutoMode) {
+            mat4.translate(mvMatrix, [this.x - 8 - xPosition, this.y - 5 - yPosition, 0]);
+        }
+        else {
+            mat4.translate(mvMatrix, [this.x - 8 + starX, this.y - 5 + starY, 0]);
+        }
+        // console.log("this.x: "+ this.x + ", this.y: " + this.y);
+        // mat4.rotate(mvMatrix, degToRad(-tilt), [1.0, 0.0, 0.0]);
+
+        // All stars spin around the Z axis at the same rate
+        mat4.rotate(mvMatrix, degToRad(spin), [0.0, 0.0, 1.0]);
+
+        // Draw the star in its main color
+        gl.uniform3f(shaderProgram.colorUniform, this.r, this.g, this.b);
+        drawStar()
+
+        mvPopMatrix();
+    };
+
+
+    var effectiveFPMS = 60 / 1000;
+    Star.prototype.animate = function (elapsedTime) {
+        this.angle += this.rotationSpeed * effectiveFPMS * elapsedTime;
+
+        // Decrease the distance, resetting the star to the outside of
+        // the spiral if it's at the center.
+        this.dist -= 0.01 * effectiveFPMS * elapsedTime;
+        if (this.dist < 0.0) {
+            this.dist += 5.0;
+            this.randomiseColors();
+        }
+
+    };
+
+
+    Star.prototype.randomiseColors = function () {
+        // Give the star a random color for normal
+        // circumstances...
+        this.r = Math.random();
+        this.g = Math.random();
+        this.b = Math.random();
+
+        // When the star is twinkling, we draw it twice, once
+        // in the color below (not spinning) and then once in the
+        // main color defined above.
+        // this.twinkleR = Math.random();
+        // this.twinkleG = Math.random();
+        // this.twinkleB = Math.random();
+    };
+
+
+
+    var stars = [];
+    var spin = 0;
+    var tilt = 0;
+    var zoom = -15;
+
+    function initWorldObjects() {
+        var numStars = 50;
+
+        for (var i=0; i < numStars; i++) {
+            // stars.push(new Star((i / numStars) * 5.0, i / numStars));
+            stars.push(new Star(i, i/numStars));
+        }
+    }
     
     function drawScene() {
         gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -346,7 +520,22 @@
 
         mat4.identity(mvMatrix);
 
-        mat4.translate(mvMatrix, [xPosition, yPosition, -7.0]);
+        // gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        // gl.enable(gl.BLEND);
+
+        mvPushMatrix();
+        mat4.translate(mvMatrix, [0.0, 0.0, zoom]);
+        mat4.rotate(mvMatrix, degToRad(tilt), [1.0, 0.0, 0.0]);
+        // draw stars
+        for (var i in stars) {
+            stars[i].draw(tilt, spin);
+            spin += 0.1;
+        }
+        mvPopMatrix();
+
+        mvPushMatrix();
+
+        mat4.translate(mvMatrix, [xPosition, yPosition, zPosition]);
         mat4.rotate(mvMatrix, degToRad(moveRotation), [0, 0, 1]);
 
         // draw body
@@ -362,6 +551,7 @@
         gl.uniform1i(shaderProgram.samplerUniform, 0);
 
         setMatrixUniforms();
+        gl.uniform3f(shaderProgram.colorUniform, 1, 1, 1);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, bodyVertexPositionBuffer.numItems);
         mvPopMatrix();
 
@@ -383,6 +573,7 @@
         gl.uniform1i(shaderProgram.samplerUniform, 0);
 
         setMatrixUniforms();
+        gl.uniform3f(shaderProgram.colorUniform, 1, 1, 1);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, triangleVertexPositionBuffer.numItems);
         mvPopMatrix();
 
@@ -404,17 +595,26 @@
         gl.uniform1i(shaderProgram.samplerUniform, 0);
 
         setMatrixUniforms();
+        gl.uniform3f(shaderProgram.colorUniform, 1, 1, 1);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, squareVertexPositionBuffer.numItems);
 
         mvPopMatrix();
+        mvPopMatrix();
+
+
     }
 
 
     var lastTime = 0;
 
     function animate() {
-        // console.log("xSpped: " + xSpeed + " ySpeed: " + ySpeed);
         var timeNow = new Date().getTime();
+        var isAutoMode = document.getElementById("autoMode").checked;
+        if (isAutoMode) {
+            xSpeed = xAutoSpeed;
+            ySpeed = yAutoSpeed;
+            zSpeed = 0;
+        }
         if (lastTime != 0) {
             var elapsed = timeNow - lastTime;
             moveRotation = -xSpeed * 6;
@@ -427,12 +627,28 @@
             if (yPosition > 3.8 || yPosition < - 3.8) {
                 yPosition = -yPosition;
             }
+
+            zPosition += zSpeed * (elapsed) / 1000.0;
+            if (zPosition > 3.8 - 7.0 || zPosition < - 3.8 - 7.0) {
+                zPosition = -(zPosition + 7.0) - 7.0;
+            }
             // console.log(xPosition);
-            rTri += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed));
+            rTri += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed), Math.abs(zSpeed));
             // rTri = Math.sin(elapsed) * 45;
-            rSquare += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed));;
+            rSquare += (360 * elapsed) / 1000.0 * Math.max(Math.abs(xSpeed), Math.abs(ySpeed), Math.abs(zSpeed));;
+
+            for (var i in stars) {
+                stars[i].animate(elapsed);
+            }
         }
+
         lastTime = timeNow;
+        console.log("ySpped: " + ySpeed + " yPosition: " + yPosition);
+        if (Math.abs(yPosition + 2.1) < 0.02 && Math.abs(ySpeed) < 0.00001) {
+            var t = new Date().getTime() - timeStart;
+            alert("You Win! Your spent: "+  t + "ms");
+            location.reload();
+        }
     }
 
 
@@ -443,13 +659,16 @@
         animate();
     }
 
+    var timeStart;
 
     function webGLStart() {
+        timeStart = new Date().getTime();
         var canvas = document.getElementById("lab2-canvas");
         initGL(canvas);
         initShaders()
         initBuffers();
         initTexture();
+        initWorldObjects();
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.enable(gl.DEPTH_TEST);
@@ -470,6 +689,10 @@
 
     <canvas id="lab2-canvas" style="border: none;" width="500" height="500"></canvas>
 
+    <br/>
+    <input type="checkbox" id="autoMode" />Auto Mode<br/>
+    Check auto mode to enable auto animation. Otherwise, you can use w, s, a, d key to move stars, or use up, down, left, right key and i(n), o(ut) key to change the speed of the helicopter. 
+    Hidden game: if you park helicopter on the bottom border, you win.
     <br/>
     <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
 </body>
