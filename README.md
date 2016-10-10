@@ -1,15 +1,13 @@
 # WebGL_Labs
 
-## [Lab1 Data
-Viualization](http://web.cse.ohio-state.edu/~lishuan/5542/Lab1/)
+## [Lab1 Data Viualization](http://web.cse.ohio-state.edu/~lishuan/5542/Lab1/)
 
 ### Functionalities
 - Read .CVS file
 - Draw bar chart
 - Use auxiliaty lines to make it professional
 
-## [Lab2 2D
-Animation](http://web.cse.ohio-state.edu/~lishuan/5542/Lab2/)
+## [Lab2 2D Animation](http://web.cse.ohio-state.edu/~lishuan/5542/Lab2/)
 
 ### Functionalities
 
