@@ -146,7 +146,7 @@
         bodyTexture.image.onload = function () {
             handleLoadedTexture(bodyTexture)
         }
-        bodyTexture.image.src = "body.png";
+        bodyTexture.image.src = "body_with_thump.png";
 
         upTexture = gl.createTexture();
         upTexture.image = new Image();
@@ -161,6 +161,13 @@
             handleLoadedTexture(tailTexture)
         }
         tailTexture.image.src = "tailScrew.png";
+
+        windowTexture = gl.createTexture();       
+        windowTexture.image = new Image();    
+        windowTexture.image.onload = function () {
+            handleLoadedTexture(windowTexture)
+        }
+        windowTexture.image.src = "window.png";
 
         starTexture = gl.createTexture();
         starTexture.image = new Image();
@@ -216,6 +223,8 @@
 
     var xAutoSpeed = -3;
     var yAutoSpeed = 0;
+
+    var windowY = 0;
 
     function handleKeyDown(event) {
         currentlyPressedKeys[event.keyCode] = true;
@@ -295,7 +304,19 @@
             tilt += 1;
         }
 
+        if (currentlyPressedKeys[85]) {
+            // u
+            if (windowY < 0.0) {
+                windowY += 0.1;
+            }
+        }
 
+        if (currentlyPressedKeys[74]) {
+            // j
+            if (windowY > -2.0) {
+                windowY -= 0.1;
+            }
+        }
     }
 
 
@@ -305,6 +326,8 @@
     var bodyVertexTextureCoordBuffer;
     var squareVertexPositionBuffer;
     var squareVertexTextureCoordBuffer;
+    var windowVertexPositionBuffer;
+    var windowVertexTextureCoordBuffer;
     var starVertexPositionBuffer;
     var starVertexTextureCoordBuffer;
 
@@ -383,6 +406,32 @@
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoord), gl.STATIC_DRAW);
         squareVertexTextureCoordBuffer.itemSize = 2;
         squareVertexTextureCoordBuffer.numItems = 4;
+
+        windowVertexPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, windowVertexPositionBuffer);
+        vertices = [
+             1.0,  1.0,  0.0,
+            -1.0,  1.0,  0.0,
+             1.0, -1.0,  0.0,
+            -1.0, -1.0,  0.0
+            ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+        windowVertexPositionBuffer.itemSize = 3;
+        windowVertexPositionBuffer.numItems = 4;
+
+        windowVertexTextureCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, windowVertexTextureCoordBuffer);
+        textureCoord = []
+        textureCoord = [
+            1.0, 1.0,
+            0.0, 1.0,
+            1.0, 0.0,
+            0.0, 0.0
+        ]
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoord), gl.STATIC_DRAW);
+        windowVertexTextureCoordBuffer.itemSize = 2;
+        windowVertexTextureCoordBuffer.numItems = 4;
+
 
         starVertexPositionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, starVertexPositionBuffer);
@@ -550,6 +599,30 @@
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, bodyVertexPositionBuffer.numItems);
         mvPopMatrix();
 
+        // draw window
+        mvPushMatrix();
+        mat4.scale(mvMatrix, [1/7.4, 1/7.4, 1.0]);
+        mat4.translate(mvMatrix, [-1, 1, 0.0001]);
+        mat4.translate(mvMatrix, [0, -1, 0]);
+        mat4.rotate(mvMatrix, degToRad(1), [1, 0, 0]);
+        mat4.translate(mvMatrix, [0, 1, 0]);
+        mat4.translate(mvMatrix, [0, windowY, 0]);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, windowVertexPositionBuffer);
+        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, windowVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, windowVertexTextureCoordBuffer);
+        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, windowVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, windowTexture);
+        gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+        setMatrixUniforms();
+        gl.uniform3f(shaderProgram.colorUniform, 1, 1, 1);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, windowVertexPositionBuffer.numItems);
+        mvPopMatrix();
+
         // draw upScrew
         mvPushMatrix();
         mat4.translate(mvMatrix, [-0.102, 0.65, 0.1]);
@@ -638,7 +711,7 @@
         }
 
         lastTime = timeNow;
-        console.log("ySpped: " + ySpeed + " yPosition: " + yPosition);
+        // console.log("ySpped: " + ySpeed + " yPosition: " + yPosition);
         if (Math.abs(yPosition + 2.1) < 0.02 && Math.abs(ySpeed) < 0.00001) {
             var t = new Date().getTime() - timeStart;
             alert("You Win! Your spent: "+  t + "ms");
@@ -687,7 +760,8 @@
     <br/>
     <div style="width:500">
     <input type="checkbox" id="autoMode" />Auto Mode<br/>
-    Check auto mode to enable auto animation. Otherwise, you can use w, s, a, d and r(otate) keys to move stars, or use up, down, left, right key and i(n), o(ut) key to change the speed of the helicopter. 
+    Check auto mode to enable auto animation. Otherwise, you can use w, s, a, d and r(otate) keys to move stars, or use up, down, left, right key and i(n), o(ut) key to change the speed of the helicopter. </div>
+    Press 'u' and 'j' to control the window and say hi to Trump.
     <br/>Hidden game: if you park helicopter on the bottom border, you win.
     <br/>
     </div>
