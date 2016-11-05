@@ -1,7 +1,7 @@
 <html>
 
 <head>
-<title>Learning WebGL &mdash; lesson 4</title>
+<title>Lab3</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
@@ -160,6 +160,8 @@
     // var yPosition = 0;
     var movePosition = 0.0;
     var moveDegree = 0.0;
+    var moveMatrix = mat4.create();
+    mat4.identity(moveMatrix);
     var cannonLR = 0.0;
     var cannonUD = 0.0;
     var starX = 0;
@@ -182,19 +184,23 @@
     function handleKeys() {
         if (currentlyPressedKeys[37]) {
             // Left cursor key
-            moveDegree += 1;
+            // moveDegree += 1;
+            mat4.rotate(moveMatrix, degToRad(1), [0, 1, 0]);
         }
         if (currentlyPressedKeys[39]) {
             // Right cursor key
-            moveDegree -= 1;
+            // moveDegree -= 1;
+            mat4.rotate(moveMatrix, degToRad(-1), [0, 1, 0]);
         }
         if (currentlyPressedKeys[38]) {
             // Up cursor key
-            movePosition += 0.1;
+            // movePosition += 0.1;
+            mat4.translate(moveMatrix, [0.1, 0, 0]);
         }
         if (currentlyPressedKeys[40]) {
             // Down cursor key
-            movePosition -= 0.1;
+            // movePosition -= 0.1;
+            mat4.translate(moveMatrix, [-0.1, 0, 0]);
         }
         // if (currentlyPressedKeys[73]) {
         //     // i
@@ -409,8 +415,9 @@
         mvPopMatrix();
 
         // mat4.rotate(mMatrix, degToRad(moveDegree) [0, 1.0, 0]);
-        mat4.rotate(mMatrix, degToRad(moveDegree), [0, 1, 0]);
-        mat4.translate(mMatrix, [movePosition, 0.0, 0.0]);
+        // mat4.rotate(mMatrix, degToRad(moveDegree), [0, 1, 0]);
+        // mat4.translate(mMatrix, [movePosition, 0.0, 0.0]);
+        mat4.multiply(mMatrix, moveMatrix);
 
         // tank body
         mvPushMatrix();
@@ -509,7 +516,7 @@
 
 
 <body onload="webGLStart();">
-    <a href="http://learningwebgl.com/blog/?p=370">&lt;&lt; Back to Lesson 4</a><br />
+    <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
 
     <canvas id="lesson04-canvas" style="border: none;" width="500" height="500"></canvas>
     <br/>
@@ -526,7 +533,14 @@
     <button onclick="moveCam('tar', [1, 0, 0])"> Right</button>
     <button onclick="moveCam('pan', [0, 0, 0])"> Pan</button>
     <br/>
-    <a href="http://learningwebgl.com/blog/?p=370">&lt;&lt; Back to Lesson 4</a><br />
+    - Use up, down, left, right key to move the tank
+    <br/>
+    - Use wsad to move the cannon
+    <br/>
+    - Click space to shoot
+    <br/>
+    <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
+
 </body>
 
 </html>
