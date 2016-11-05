@@ -1,4 +1,45 @@
+function Plane(size, color) {
+    var vertices = [];
+    var colors = [];
+    var indices = [];
+    this.vertexPositionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
+    this.vertices = [
+        -size/2,  size/2, -size/2,
+        -size/2,  size/2,  size/2,
+         size/2,  size/2,  size/2,
+         size/2,  size/2, -size/2,
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.STATIC_DRAW);
+    this.vertexPositionBuffer.itemSize = 3;
+    this.vertexPositionBuffer.numItems = this.vertices.length/3;
+
+    this.vertexColorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexColorBuffer);
+    this.colors = [
+        1.0, 0.0, 0.0, 1.0,
+        1.0, 1.0, 0.0, 1.0,
+        0.0, 1.0, 0.0, 1.0,
+        1.0, 0.5, 0.5, 1.0
+    ];
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colors), gl.STATIC_DRAW);
+    this.vertexColorBuffer.itemSize = 4;
+    this.vertexColorBuffer.numItems = this.colors.length/4;
+
+    this.vertexIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.vertexIndexBuffer);
+    this.vertexIndices = [
+        0, 1, 2,      0, 2, 3,
+    ];
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.vertexIndices), gl.STATIC_DRAW);
+    this.vertexIndexBuffer.itemSize = 1;
+    this.vertexIndexBuffer.numItems = this.vertexIndices.length;
+}
+
 function Cube(size, color) {
+    var vertices = [];
+    var colors = [];
+    var indices = [];
     this.vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
     vertices = [
@@ -89,9 +130,9 @@ function Sphere(radius, numSlices, numStacks, color) {
         for (var j = 0; j < numSlices; j++) {
             var fi = degToRad(180 / numStacks * i - 90);
             var thita = degToRad(360 / numSlices * j);
-            var r = Math.cos(fi);
+            var r = Math.cos(fi) * radius;
             var x = r * Math.cos(thita);
-            var y = Math.sin(fi);
+            var y = r * Math.sin(fi);
             var z = r * Math.sin(thita);
             vertices = vertices.concat([x, y, z]);
             // colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
@@ -128,13 +169,12 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
     var vertices = [];
     var colors = [];
     var indices = [];
-    var divideNum = 6
     this.vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
 
     for (var i = 0; i < numStacks + 1; i++) {
         for (var j = 0; j < numSlices; j++) {
-            var r = (topRadius - baseRadius) / numStacks * i + baseRadius;
+            var r = ((baseRadius - topRadius) / numStacks * i + topRadius)/2;
             var thita = degToRad(360 / numSlices * j);
             var x = r * Math.cos(thita);
             var y = height / numStacks * i - height/2;
