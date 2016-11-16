@@ -8,29 +8,90 @@
 <script type="text/javascript" src="webgl-utils.js"></script>
 
 <script id="shader-fs" type="x-shader/x-fragment">
+    // precision mediump float;
+
+    // varying vec4 vColor;
+
+    // void main(void) {
+    //     gl_FragColor = vColor;
+    // }
+
     precision mediump float;
 
-    varying vec4 vColor;
+    varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vPosition;
+
+    uniform bool uUseLighting;
+    uniform bool uUseTextures;
+
+    uniform vec3 uAmbientColor;
+
+    uniform vec3 uPointLightingLocation;
+    uniform vec3 uPointLightingColor;
+
+    uniform sampler2D uSampler;
+
 
     void main(void) {
-        gl_FragColor = vColor;
+        vec3 lightWeighting;
+        if (!uUseLighting) {
+            lightWeighting = vec3(1.0, 1.0, 1.0);
+        } else {
+            vec3 lightDirection = normalize(uPointLightingLocation - vPosition.xyz);
+
+            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
+            lightWeighting = uAmbientColor + uPointLightingColor * directionalLightWeighting;
+        }
+
+        // vec4 fragmentColor;
+        // if (uUseTextures) {
+        //     fragmentColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+        // } else {
+        //     fragmentColor = vec4(1.0, 1.0, 1.0, 1.0);
+        // }
+        // gl_FragColor = vec4(fragmentColor.rgb * lightWeighting, fragmentColor.a);
+        gl_FragColor = vec4(lightWeighting, 1.0);
     }
 </script>
 
 <script id="shader-vs" type="x-shader/x-vertex">
-    attribute vec3 aVertexPosition;
-    attribute vec4 aVertexColor;
+    // attribute vec3 aVertexPosition;
+    // attribute vec4 aVertexColor;
 
+    // uniform mat4 uMMatrix;
+    // uniform mat4 uVMatrix;
+    // uniform mat4 uPMatrix;
+
+    // varying vec4 vColor;
+
+    // void main(void) {
+    //     // gl_Position = uPMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+    //     gl_Position = uPMatrix* uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
+    //     vColor = aVertexColor;
+    // }
+
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    // attribute vec2 aTextureCoord;
+
+    // uniform mat4 uMVMatrix;
     uniform mat4 uMMatrix;
     uniform mat4 uVMatrix;
     uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
 
-    varying vec4 vColor;
+    // varying vec2 vTextureCoord;
+    varying vec3 vTransformedNormal;
+    varying vec4 vPosition;
+
 
     void main(void) {
-        // gl_Position = uPMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+        vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
+        // gl_Position = uPMatrix * vPosition;
         gl_Position = uPMatrix* uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
-        vColor = aVertexColor;
+        // vTextureCoord = aTextureCoord;
+        vTransformedNormal = uNMatrix * aVertexNormal;
     }
 </script>
 <script type="text/javascript" src="geometric.js"></script>
@@ -114,13 +175,14 @@
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
         shaderProgram.mMatrixUniform = gl.getUniformLocation(shaderProgram, "uMMatrix");
         shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
+        shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
     }
 
-
-    var mMatrix = mat4.create();
     var mMatrixStack = [];
+    var mMatrix = mat4.create();
     var pMatrix = mat4.create();
     var vMatrix = mat4.create();
+    var nMatrix = mat4.create();
 
     function mvPushMatrix() {
         var copy = mat4.create();
@@ -140,6 +202,16 @@
         gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
         gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mMatrix);
         gl.uniformMatrix4fv(shaderProgram.vMatrixUniform, false, vMatrix);
+
+        mat4.identity(nMatrix); 
+        nMatrix = mat4.multiply(nMatrix, vMatrix);
+        nMatrix = mat4.multiply(nMatrix, mMatrix);  
+        nMatrix = mat4.inverse(nMatrix);
+        nMatrix = mat4.transpose(nMatrix); 
+
+        // mat4.toInverseMat3(mvMatrix, normalMatrix);
+        // mat3.transpose(normalMatrix);
+        gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, nMatrix);
     }
 
 
@@ -202,18 +274,6 @@
             // movePosition -= 0.1;
             mat4.translate(moveMatrix, [-0.1, 0, 0]);
         }
-        // if (currentlyPressedKeys[73]) {
-        //     // i
-        //     if (zSpeed < 5) {
-        //         zSpeed += 0.2;
-        //     }
-        // }
-        // if (currentlyPressedKeys[79]) {
-        //     // o
-        //     if (zSpeed > -5) {
-        //         zSpeed -= 0.2;
-        //     }
-        // }
         if (currentlyPressedKeys[87]) {
             // w
             if (cannonUD < 70) {
@@ -309,39 +369,6 @@
         lastMouseY = newY;
     }
 
-    // var TRS = function() {
-    //     this.translate = [0, 0, 0];
-    //     this.rotate = [0, 0, 0];
-    //     this.scale = [0, 0, 0];
-    // }
-    
-    // var Node = function(src) {
-    //     this. children = [];
-    //     mat4.identity(this.localMatrix);
-    //     mat4.identity(this.worldMatrix);
-    //     this.source = src;
-    // }
-
-    // Node.prototype.setParent = function(parent) {
-    //     if(this.parent) {
-    //         var ndx = this.parent.children.indexOf(this);
-    //         if (ndx >= 0) {
-    //             this.parent.children.splice(ndx, 1);
-    //         }
-    //     }
-
-    //     if (parent) {
-    //         parent.children.push(this);
-    //     }
-    //     this.parent = parent;
-    // }
-
-    // Node.prototype.updateWorldMatrix = function(parentWorldMatrix) {
-    //     var source = this.source;
-    //     if (source) {
-    //         source.getMa
-    //     }
-    // }
     
     var sphere;
     var sylinder;
@@ -351,11 +378,12 @@
     var ground;
     function initBuffers() {
         ground = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
-        sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
-        sylinder = new Sylinder(1, 1.5, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
+        // sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
+        sphere = new Sphere(4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
+        sylinder = new Sylinder(2, 3, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
         cube = new Cube(1);
-        wheel = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
-        cannon = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
+        wheel = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
+        cannon = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
         
     }
 
@@ -403,69 +431,65 @@
         mat4.lookAt(camPos, camTar, camUp, vMatrix);
 
         mat4.identity(mMatrix);
-
         mat4.translate(mMatrix, [0.0, 0.0, -5.0]);
         mat4.multiply(mMatrix, sceneChangeMatrix);
 
-        // ground
-        mvPushMatrix();
-        mat4.translate(mMatrix, [0, -2, 0]);
-        mat4.scale(mMatrix, [100, 1, 100]);
-        drawObject(ground);
-        mvPopMatrix();
-
-        // mat4.rotate(mMatrix, degToRad(moveDegree) [0, 1.0, 0]);
-        // mat4.rotate(mMatrix, degToRad(moveDegree), [0, 1, 0]);
-        // mat4.translate(mMatrix, [movePosition, 0.0, 0.0]);
-        mat4.multiply(mMatrix, moveMatrix);
-
-        // tank body
-        mvPushMatrix();
-        // mat4.rotate(mMatrix, degToRad(rsylinder), [1, 0, 0]);
-        mat4.scale(mMatrix, [5, 1, 3]);
-        drawObject(cube);
-        mvPopMatrix();
-
-        // base
-        mvPushMatrix();
-        mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
-        mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
-        // mat4.rotate(mMatrix, degToRad(30), [0, 1, 0]);
-        drawObject(sylinder);
-        mvPushMatrix();
-        mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
-        mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
-        mat4.translate(mMatrix, [0.2, 2, 0]);
-        // mat4.rotate(mMatrix, degToRad(30), [0, -1, 0]);
-        // mat4.translate(mMatrix, [0, 0.5, 0]);
-        // mat4.rotate(mMatrix, degToRad(90 - 20), [0, 0, -1]);
-        // mat4.translate(mMatrix, [0, -0.5, 0]);
-        mat4.scale(mMatrix, [1, 3, 1]);
-        drawObject(cannon);
-        mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
-        mvPushMatrix();
-        mat4.scale(mMatrix, [1/3, 1, 1]);
-        mat4.translate(mMatrix, [bumbPosition, 0, 0]);
-        mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
         drawObject(sphere);
-        mvPopMatrix();
-        mvPopMatrix();
-        mvPopMatrix();
 
-        // wheels
-        for (var i = 0; i < 5; i++) {
-            mvPushMatrix();
-            mat4.translate(mMatrix, [i-2, -1.0, 0.0]);
-            mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
-            mat4.scale(mMatrix, [1.0, 3.0, 1.0]);
-            drawObject(wheel);
-            mvPopMatrix();
-        }
+        // // ground
+        // mvPushMatrix();
+        // mat4.translate(mMatrix, [0, -2, 0]);
+        // mat4.scale(mMatrix, [100, 1, 100]);
+        // drawObject(ground);
+        // mvPopMatrix();
 
-        
+        // // mat4.rotate(mMatrix, degToRad(moveDegree) [0, 1.0, 0]);
+        // // mat4.rotate(mMatrix, degToRad(moveDegree), [0, 1, 0]);
+        // // mat4.translate(mMatrix, [movePosition, 0.0, 0.0]);
+        // mat4.multiply(mMatrix, moveMatrix);
 
+        // // tank body
+        // mvPushMatrix();
+        // // mat4.rotate(mMatrix, degToRad(rsylinder), [1, 0, 0]);
+        // mat4.scale(mMatrix, [5, 1, 3]);
+        // drawObject(cube);
+        // mvPopMatrix();
 
-        
+        // // base
+        // mvPushMatrix();
+        // mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
+        // mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
+        // // mat4.rotate(mMatrix, degToRad(30), [0, 1, 0]);
+        // drawObject(sylinder);
+        // mvPushMatrix();
+        // mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
+        // mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
+        // mat4.translate(mMatrix, [0.2, 2, 0]);
+        // // mat4.rotate(mMatrix, degToRad(30), [0, -1, 0]);
+        // // mat4.translate(mMatrix, [0, 0.5, 0]);
+        // // mat4.rotate(mMatrix, degToRad(90 - 20), [0, 0, -1]);
+        // // mat4.translate(mMatrix, [0, -0.5, 0]);
+        // mat4.scale(mMatrix, [1, 3, 1]);
+        // drawObject(cannon);
+        // mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
+        // mvPushMatrix();
+        // mat4.scale(mMatrix, [1/3, 1, 1]);
+        // mat4.translate(mMatrix, [bumbPosition, 0, 0]);
+        // mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
+        // drawObject(sphere);
+        // mvPopMatrix();
+        // mvPopMatrix();
+        // mvPopMatrix();
+
+        // // wheels
+        // for (var i = 0; i < 5; i++) {
+        //     mvPushMatrix();
+        //     mat4.translate(mMatrix, [i-2, -1.0, 0.0]);
+        //     mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
+        //     mat4.scale(mMatrix, [1.0, 3.0, 1.0]);
+        //     drawObject(wheel);
+        //     mvPopMatrix();
+        // }       
     }
 
     var lastTime = 0;

@@ -236,7 +236,7 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
     var indices = [];
     var normalData = [];
     
-
+    // side
     for (var i = 0; i < numStacks + 1; i++) {
         for (var j = 0; j < numSlices; j++) {
             var r = ((baseRadius - topRadius) / numStacks * i + topRadius);
@@ -245,6 +245,7 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
             var y = height / numStacks * i - height/2;
             var z = r * Math.sin(thita);
             vertices = vertices.concat([x, y, z]);
+            normalData = normalData.concat([Math.sin(thita), Math.cos(thita), 0]);
             colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
         }
     }
@@ -257,20 +258,23 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
             indices = indices.concat([a, b, c, b, c, d]);
         }
     }
-    vertices = vertices.concat([0, -height/2, 0]);
-    vertices = vertices.concat([0, height/2, 0]); 
-    colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(1), 1.0]);
-    colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(-1), 1.0]);
-    for (var i = 0; i < numSlices; i++) {
-        var a = vertices.length / 3 - 2;
-        var b = i;
-        var c = (i + 1) % numSlices;
-        var a2 = vertices.length / 3 - 1;
-        var b2 = vertices.length / 3 - 2 - numSlices + i;
-        var c2 = vertices.length / 3 - 2 - numSlices + (i + 1) % numSlices;
-        indices = indices.concat([a, b, c]);
-        indices = indices.concat([a2, b2, c2]);
-    }
+
+    // up & down
+    // vertices = vertices.concat([0, -height/2, 0]);
+    // vertices = vertices.concat([0, height/2, 0]); 
+    // colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(1), 1.0]);
+    // colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(-1), 1.0]);
+    // for (var i = 0; i < numSlices; i++) {
+    //     var a = vertices.length / 3 - 2;
+    //     var b = i;
+    //     var c = (i + 1) % numSlices;
+    //     var a2 = vertices.length / 3 - 1;
+    //     var b2 = vertices.length / 3 - 2 - numSlices + i;
+    //     var c2 = vertices.length / 3 - 2 - numSlices + (i + 1) % numSlices;
+    //     indices = indices.concat([a, b, c]);
+    //     indices = indices.concat([a2, b2, c2]);
+    // }
+
     this.vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
