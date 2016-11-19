@@ -1,549 +1,158 @@
+
+<!DOCTYPE html>
+
 <html>
 
 <head>
-<title>Lab3</title>
+<title>Lab4</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+<script type="text/javascript" src="geometric.js"></script>
 <script type="text/javascript" src="webgl-utils.js"></script>
-
+<!--  ************** Fragment Shader ************* --> 
 <script id="shader-fs" type="x-shader/x-fragment">
-    // precision mediump float;
+precision mediump float;
 
-    // varying vec4 vColor;
+   uniform mat4 uMMatrix; 
+   uniform mat4 uVMatrix;
+   uniform mat4 uPMatrix;
+   uniform mat4 uNMatrix; 
 
-    // void main(void) {
-    //     gl_FragColor = vColor;
-    // }
+   uniform vec4 light_pos; 
+   uniform vec4 ambient_coef;
+   uniform vec4 diffuse_coef;
+   uniform vec4 specular_coef;
+   uniform float mat_shininess; 
 
-    precision mediump float;
+   uniform vec4 light_ambient; 
+   uniform vec4 light_diffuse; 
+   uniform vec4 light_specular;
 
-    varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vPosition;
+   varying vec4 eye_pos; 
+   varying vec3 v_normal;
+   varying vec4 vMatetialColor; 
 
-    uniform bool uUseLighting;
-    uniform bool uUseTextures;
+void main(void) {
 
-    uniform vec3 uAmbientColor;
+        vec4 light_pos_in_eye = light_pos;   
+        // light vector L = l-p 
+        vec3 light_vector = normalize(vec3(light_pos_in_eye - eye_pos)); 
 
-    uniform vec3 uPointLightingLocation;
-    uniform vec3 uPointLightingColor;
+        // eye vector V = e-p, where e is (0,0,0) 
+        vec3 eye_vector = -vec3(eye_pos); // V
+        
+        // halfway vector (L+V) 
+        vec3 halfv = normalize(light_vector+eye_vector); 
+        
+        vec4 ambient = ambient_coef * light_ambient; 
+        float ndotl = max(dot(v_normal, light_vector), 0.0); 
 
-    uniform sampler2D uSampler;
+        vec3 V = normalize(-vec3(eye_pos)); // V
+        vec3 R = normalize(2.0 * ndotl * v_normal - light_vector);
+
+        float rdotv = max(dot(R, V), 0.0);
+        vec4 diffuse = diffuse_coef * light_diffuse* ndotl; 
+        float ndoth = max(dot(v_normal, halfv), 0.0);
+        vec4 specular;  
+        if (ndotl>0.0) 
+          specular = specular_coef* light_specular*pow(rdotv, mat_shininess); 
+          // specular = specular_coef* light_specular*pow(ndoth, mat_shininess); 
+        else
+          specular = vec4(0,0,0,1);  
+        vec4 vColor = (ambient+diffuse+specular)*vMatetialColor;
+        // vec4 vColor = ambient+specular;
 
 
-    void main(void) {
-        vec3 lightWeighting;
-        if (!uUseLighting) {
-            lightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
-            vec3 lightDirection = normalize(uPointLightingLocation - vPosition.xyz);
+	gl_FragColor =vColor;
 
-            float directionalLightWeighting = max(dot(normalize(vTransformedNormal), lightDirection), 0.0);
-            lightWeighting = uAmbientColor + uPointLightingColor * directionalLightWeighting;
-        }
-
-        // vec4 fragmentColor;
-        // if (uUseTextures) {
-        //     fragmentColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-        // } else {
-        //     fragmentColor = vec4(1.0, 1.0, 1.0, 1.0);
-        // }
-        // gl_FragColor = vec4(fragmentColor.rgb * lightWeighting, fragmentColor.a);
-        gl_FragColor = vec4(lightWeighting, 1.0);
     }
 </script>
 
+<!--  ************** Vertex Shader ************* --> 
 <script id="shader-vs" type="x-shader/x-vertex">
-    // attribute vec3 aVertexPosition;
-    // attribute vec4 aVertexColor;
 
-    // uniform mat4 uMMatrix;
-    // uniform mat4 uVMatrix;
-    // uniform mat4 uPMatrix;
-
-    // varying vec4 vColor;
-
-    // void main(void) {
-    //     // gl_Position = uPMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
-    //     gl_Position = uPMatrix* uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
-    //     vColor = aVertexColor;
-    // }
-
+precision mediump float;
     attribute vec3 aVertexPosition;
     attribute vec3 aVertexNormal;
-    // attribute vec2 aTextureCoord;
+    attribute vec4 aVertexColor;
 
-    // uniform mat4 uMVMatrix;
-    uniform mat4 uMMatrix;
-    uniform mat4 uVMatrix;
-    uniform mat4 uPMatrix;
-    uniform mat3 uNMatrix;
+   uniform mat4 uMMatrix; 
+   uniform mat4 uVMatrix;
+   uniform mat4 uPMatrix;
+   uniform mat4 uNMatrix; 
 
-    // varying vec2 vTextureCoord;
-    varying vec3 vTransformedNormal;
-    varying vec4 vPosition;
+   uniform vec4 light_pos; 
+   uniform vec4 ambient_coef;
+   uniform vec4 diffuse_coef;
+   uniform vec4 specular_coef;
+   uniform float mat_shininess; 
+
+   uniform vec4 light_ambient; 
+   uniform vec4 light_diffuse; 
+   uniform vec4 light_specular;
+
+   varying vec4 eye_pos;  //vertex position in eye space 
+   varying vec3 v_normal;  // vertex normal
+   // varying vec4 vColor; 
+   varying vec4 vMatetialColor;
 
 
     void main(void) {
-        vPosition = uMVMatrix * vec4(aVertexPosition, 1.0);
-        // gl_Position = uPMatrix * vPosition;
-        gl_Position = uPMatrix* uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
-        // vTextureCoord = aTextureCoord;
-        vTransformedNormal = uNMatrix * aVertexNormal;
-    }
-</script>
-<script type="text/javascript" src="geometric.js"></script>
 
-<script type="text/javascript">
+       // transform light pos from local to eye space
+       // vec4 light_pos_in_eye = uVMatrix * uMMatrix * light_pos;
+      	// vec4 light_pos_in_eye = light_pos;   
 
-    var gl;
+        // transform normal from local to eye space: normal matrix is the inverse transpose of the modelview matrix 
+      	v_normal =normalize(vec3(uNMatrix*vec4(aVertexNormal,1.0)));
 
-    function initGL(canvas) {
-        try {
-            gl = canvas.getContext("experimental-webgl");
-            gl.viewportWidth = canvas.width;
-            gl.viewportHeight = canvas.height;
-        } catch (e) {
-        }
-        if (!gl) {
-            alert("Could not initialise WebGL, sorry :-(");
-        }
-    }
+        // transform the vertex position to eye space 
+        eye_pos = uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
 
+        // // light vector L = l-p 
+        // vec3 light_vector = normalize(vec3(light_pos_in_eye - eye_pos)); 
 
-    function getShader(gl, id) {
-        var shaderScript = document.getElementById(id);
-        if (!shaderScript) {
-            return null;
-        }
-
-        var str = "";
-        var k = shaderScript.firstChild;
-        while (k) {
-            if (k.nodeType == 3) {
-                str += k.textContent;
-            }
-            k = k.nextSibling;
-        }
-
-        var shader;
-        if (shaderScript.type == "x-shader/x-fragment") {
-            shader = gl.createShader(gl.FRAGMENT_SHADER);
-        } else if (shaderScript.type == "x-shader/x-vertex") {
-            shader = gl.createShader(gl.VERTEX_SHADER);
-        } else {
-            return null;
-        }
-
-        gl.shaderSource(shader, str);
-        gl.compileShader(shader);
-
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            alert(gl.getShaderInfoLog(shader));
-            return null;
-        }
-
-        return shader;
-    }
-
-
-    var shaderProgram;
-
-    function initShaders() {
-        var fragmentShader = getShader(gl, "shader-fs");
-        var vertexShader = getShader(gl, "shader-vs");
-
-        shaderProgram = gl.createProgram();
-        gl.attachShader(shaderProgram, vertexShader);
-        gl.attachShader(shaderProgram, fragmentShader);
-        gl.linkProgram(shaderProgram);
-
-        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            alert("Could not initialise shaders");
-        }
-
-        gl.useProgram(shaderProgram);
-
-        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
-        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-
-        shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
-        gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
-
-        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
-        shaderProgram.mMatrixUniform = gl.getUniformLocation(shaderProgram, "uMMatrix");
-        shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
-        shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-    }
-
-    var mMatrixStack = [];
-    var mMatrix = mat4.create();
-    var pMatrix = mat4.create();
-    var vMatrix = mat4.create();
-    var nMatrix = mat4.create();
-
-    function mvPushMatrix() {
-        var copy = mat4.create();
-        mat4.set(mMatrix, copy);
-        mMatrixStack.push(copy);
-    }
-
-    function mvPopMatrix() {
-        if (mMatrixStack.length == 0) {
-            throw "Invalid popMatrix!";
-        }
-        mMatrix = mMatrixStack.pop();
-    }
-
-
-    function setMatrixUniforms() {
-        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-        gl.uniformMatrix4fv(shaderProgram.mMatrixUniform, false, mMatrix);
-        gl.uniformMatrix4fv(shaderProgram.vMatrixUniform, false, vMatrix);
-
-        mat4.identity(nMatrix); 
-        nMatrix = mat4.multiply(nMatrix, vMatrix);
-        nMatrix = mat4.multiply(nMatrix, mMatrix);  
-        nMatrix = mat4.inverse(nMatrix);
-        nMatrix = mat4.transpose(nMatrix); 
-
-        // mat4.toInverseMat3(mvMatrix, normalMatrix);
-        // mat3.transpose(normalMatrix);
-        gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, nMatrix);
-    }
-
-
-    function degToRad(degrees) {
-        return degrees * Math.PI / 180;
-    }
-
-    var currentlyPressedKeys = {};
-    // var xPosition = 1;
-    var moveRotation = 1;
-    var moveDirection = 1;
-    var rTri = 0;
-    var rSquare = 0;
-    var xSpeed = 0;
-    var ySpeed = 0;
-    var zSpeed = 0;
-    // var xPosition = 0;
-    // var yPosition = 0;
-    var movePosition = 0.0;
-    var moveDegree = 0.0;
-    var moveMatrix = mat4.create();
-    mat4.identity(moveMatrix);
-    var cannonLR = 0.0;
-    var cannonUD = 0.0;
-    var starX = 0;
-    var starY = 0;
-
-    var xAutoSpeed = -3;
-    var yAutoSpeed = 0;
-    var bumbPosition = 10;
-
-    var windowY = 0;
-
-    function handleKeyDown(event) {
-        currentlyPressedKeys[event.keyCode] = true;
-    }
-
-    function handleKeyUp(event) {
-        currentlyPressedKeys[event.keyCode] = false;
-    }
-
-    function handleKeys() {
-        if (currentlyPressedKeys[37]) {
-            // Left cursor key
-            // moveDegree += 1;
-            mat4.rotate(moveMatrix, degToRad(1), [0, 1, 0]);
-        }
-        if (currentlyPressedKeys[39]) {
-            // Right cursor key
-            // moveDegree -= 1;
-            mat4.rotate(moveMatrix, degToRad(-1), [0, 1, 0]);
-        }
-        if (currentlyPressedKeys[38]) {
-            // Up cursor key
-            // movePosition += 0.1;
-            mat4.translate(moveMatrix, [0.1, 0, 0]);
-        }
-        if (currentlyPressedKeys[40]) {
-            // Down cursor key
-            // movePosition -= 0.1;
-            mat4.translate(moveMatrix, [-0.1, 0, 0]);
-        }
-        if (currentlyPressedKeys[87]) {
-            // w
-            if (cannonUD < 70) {
-                cannonUD += 1;
-            }
-        }
-        if (currentlyPressedKeys[83]) {
-            // s
-            if (cannonUD > 0) {
-                cannonUD -= 1;
-            }
-        }
-        if (currentlyPressedKeys[65]) {
-            // a
-            cannonLR += 1;
-        }
-        if (currentlyPressedKeys[68]) {
-            // d
-            cannonLR -= 1;
-        }
-
-        if (currentlyPressedKeys[32]) {
-            if (bumbPosition > 3) {
-                bumbPosition = 0;
-            }
-        }
-
-        // if (currentlyPressedKeys[85]) {
-        //     // u
-        //     if (windowY < 0.0) {
-        //         windowY += 0.1;
-        //     }
-        // }
-
-        // if (currentlyPressedKeys[74]) {
-        //     // j
-        //     if (windowY > -2.0) {
-        //         windowY -= 0.1;
-        //     }
-        // }
-    }
-
-    var mouseDown = false;
-    var lastMouseX = null;
-    var lastMouseY = null;
-
-    var sceneChangeMatrix = mat4.create();
-    mat4.identity(sceneChangeMatrix);
-
-    function handleMouseDown(event) {
-        mouseDown = true;
-        lastMouseX = event.clientX;
-        lastMouseY = event.clientY;
-    }
-
-
-    function handleMouseUp(event) {
-        mouseDown = false;
-    }
-
-
-    function handleMouseMove(event) {
-        if (!mouseDown) {
-            return;
-        }
-        var newX = event.clientX;
-        var newY = event.clientY;
-
-        var deltaX = newX - lastMouseX
-        var deltaY = newY - lastMouseY;
-        var newChangeMatrix = mat4.create();
-        console.log(event.button);
-        if (event.button == 0) {
-            mat4.identity(newChangeMatrix);
-            mat4.rotate(newChangeMatrix, degToRad(deltaX / 5), [0, 1, 0]);
-            mat4.rotate(newChangeMatrix, degToRad(deltaY / 5), [1, 0, 0]);
-            mat4.multiply(newChangeMatrix, sceneChangeMatrix, sceneChangeMatrix);
-        }
-        else if (event.button == 2) {
-            mat4.identity(newChangeMatrix);
-            mat4.scale(newChangeMatrix, [deltaX / 100 + 1, deltaX/100 + 1, 1.0]);
-            mat4.scale(newChangeMatrix, [deltaY/100 + 1, deltaY/100 + 1, 1.0]);
-            mat4.multiply(newChangeMatrix, sceneChangeMatrix, sceneChangeMatrix);
-        }
-        else if (event.button == 1) {
-            mat4.identity(newChangeMatrix);
-            mat4.translate(newChangeMatrix, [deltaX / 100, 0.0, 0.0]);
-            mat4.translate(newChangeMatrix, [0.0, -deltaY / 100, 0.0]);
-            mat4.multiply(newChangeMatrix, sceneChangeMatrix, sceneChangeMatrix);
-        }
-
-        lastMouseX = newX;
-        lastMouseY = newY;
-    }
-
-    
-    var sphere;
-    var sylinder;
-    var cube;
-    var wheel;
-    var cannon;
-    var ground;
-    function initBuffers() {
-        ground = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
-        // sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
-        sphere = new Sphere(4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
-        sylinder = new Sylinder(2, 3, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
-        cube = new Cube(1);
-        wheel = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
-        cannon = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
+        // // eye vector V = e-p, where e is (0,0,0) 
+        // vec3 eye_vector = -vec3(eye_pos); 
         
+        // // halfway vector (L+V) 
+        // vec3 halfv = normalize(light_vector+eye_vector); 
+        
+        // vec4 ambient = ambient_coef * light_ambient; 
+        // float ndotl = max(dot(v_normal, light_vector), 0.0); 
+
+        // vec4 diffuse = diffuse_coef * light_diffuse* ndotl; 
+        // float ndoth = max(dot(v_normal, halfv), 0.0);
+        // vec4 specular;  
+        // if (ndotl>0.0) 
+        // specular = specular_coef* light_specular*pow(ndoth, mat_shininess); 
+        // else
+        // specular = vec4(0,0,0,1);  
+        // vColor = ambient+diffuse+specular;
+
+        gl_Position = uPMatrix*uVMatrix*uMMatrix*vec4(aVertexPosition, 1.0);
+
+     vMatetialColor = aVertexColor;
+//      vColor = vec4(aVertexNormal, 1.0);
+//      vColor = vec4(v_normal, 1.0);
+
     }
-
-
-    var rPyramid = 0;
-    var rsylinder = 0;
-    var camPos = [0, 4, 8];
-    var camTar = [0, 0, 0];
-    var camUp = [0, 1, 0];
-    var panDegree = 0;
-    function moveCam(i, m) {
-        if (i == "pos") {
-            for (var i = 0; i < m.length; i++) {
-                camPos[i] += m[i] / 10;
-            }
-        }
-        if (i == "tar") {
-            for (var i = 0; i < m.length; i++) {
-                camTar[i] += m[i] / 10;
-            }
-        }
-        if (i == "pan") {
-            var panRad = degToRad(panDegree + 5);
-            var x = camUp[0];
-            var y = camUp[1];
-            camUp[0] = x * Math.cos(panRad) - y * Math.sin(panRad);
-            camUp[1] = y * Math.cos(panRad) + x * Math.sin(panRad);
-        }
-    }
-
-    function drawObject(obj) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexPositionBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, obj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexColorBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, obj.vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.vertexIndexBuffer); 
-        setMatrixUniforms();
-        gl.drawElements(gl.TRIANGLES, obj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
-
-    function drawScene() {
-        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
-        mat4.lookAt(camPos, camTar, camUp, vMatrix);
-
-        mat4.identity(mMatrix);
-        mat4.translate(mMatrix, [0.0, 0.0, -5.0]);
-        mat4.multiply(mMatrix, sceneChangeMatrix);
-
-        drawObject(sphere);
-
-        // // ground
-        // mvPushMatrix();
-        // mat4.translate(mMatrix, [0, -2, 0]);
-        // mat4.scale(mMatrix, [100, 1, 100]);
-        // drawObject(ground);
-        // mvPopMatrix();
-
-        // // mat4.rotate(mMatrix, degToRad(moveDegree) [0, 1.0, 0]);
-        // // mat4.rotate(mMatrix, degToRad(moveDegree), [0, 1, 0]);
-        // // mat4.translate(mMatrix, [movePosition, 0.0, 0.0]);
-        // mat4.multiply(mMatrix, moveMatrix);
-
-        // // tank body
-        // mvPushMatrix();
-        // // mat4.rotate(mMatrix, degToRad(rsylinder), [1, 0, 0]);
-        // mat4.scale(mMatrix, [5, 1, 3]);
-        // drawObject(cube);
-        // mvPopMatrix();
-
-        // // base
-        // mvPushMatrix();
-        // mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
-        // mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
-        // // mat4.rotate(mMatrix, degToRad(30), [0, 1, 0]);
-        // drawObject(sylinder);
-        // mvPushMatrix();
-        // mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
-        // mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
-        // mat4.translate(mMatrix, [0.2, 2, 0]);
-        // // mat4.rotate(mMatrix, degToRad(30), [0, -1, 0]);
-        // // mat4.translate(mMatrix, [0, 0.5, 0]);
-        // // mat4.rotate(mMatrix, degToRad(90 - 20), [0, 0, -1]);
-        // // mat4.translate(mMatrix, [0, -0.5, 0]);
-        // mat4.scale(mMatrix, [1, 3, 1]);
-        // drawObject(cannon);
-        // mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
-        // mvPushMatrix();
-        // mat4.scale(mMatrix, [1/3, 1, 1]);
-        // mat4.translate(mMatrix, [bumbPosition, 0, 0]);
-        // mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
-        // drawObject(sphere);
-        // mvPopMatrix();
-        // mvPopMatrix();
-        // mvPopMatrix();
-
-        // // wheels
-        // for (var i = 0; i < 5; i++) {
-        //     mvPushMatrix();
-        //     mat4.translate(mMatrix, [i-2, -1.0, 0.0]);
-        //     mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
-        //     mat4.scale(mMatrix, [1.0, 3.0, 1.0]);
-        //     drawObject(wheel);
-        //     mvPopMatrix();
-        // }       
-    }
-
-    var lastTime = 0;
-
-    function animate() {
-        var timeNow = new Date().getTime();
-        if (lastTime != 0) {
-            var elapsed = timeNow - lastTime;
-            bumbPosition += 1/10;
-            rPyramid += (90 * elapsed) / 1000.0;
-            rsylinder -= (75 * elapsed) / 1000.0;
-        }
-        lastTime = timeNow;
-    }
-
-
-    function tick() {
-        requestAnimFrame(tick);
-        drawScene();
-        animate();
-        handleKeys();
-    }
-
-
-    function webGLStart() {
-        var canvas = document.getElementById("lesson04-canvas");
-        initGL(canvas);
-        initShaders()
-        initBuffers();
-
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.enable(gl.DEPTH_TEST);
-
-        canvas.oncontextmenu = function (e) {e.preventDefault();};
-        canvas.onmousedown = handleMouseDown;
-        document.onmouseup = handleMouseUp;
-        document.onmousemove = handleMouseMove;
-        document.onkeydown = handleKeyDown;
-        document.onkeyup = handleKeyUp;
-
-        tick();
-    }
-
 </script>
+
+
+<script type="text/javascript" src="shaders_setup.js"></script>
+<script type="text/javascript" src="code08.js"></script>
 
 
 </head>
 
 
 <body onload="webGLStart();">
-    <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
+<a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
+    <canvas id="code03-canvas"style="border:none;"width="700"height="700"></canvas>
 
-    <canvas id="lesson04-canvas" style="border: none;" width="500" height="500"></canvas>
-    <br/>
+<br/>
     move camera: 
     <button onclick="moveCam('pos', [0, 1, 0])"> Up</button>
     <button onclick="moveCam('pos', [0, -1, 0])"> Down</button>
@@ -555,16 +164,49 @@
     <button onclick="moveCam('tar', [0, -1, 0])"> Down</button>
     <button onclick="moveCam('tar', [-1, 0, 0])"> Left</button>
     <button onclick="moveCam('tar', [1, 0, 0])"> Right</button>
-    <button onclick="moveCam('pan', [0, 0, 0])"> Pan</button>
+    
     <br/>
-    - Use up, down, left, right key to move the tank
+    - Use up, down, left, right key to move the object
     <br/>
-    - Use wsad to move the cannon
+    - Use qweasd key to move the light
     <br/>
-    - Click space to shoot
+    - Use uj key to change intensity of the light
+    
     <br/>
     <a href="http://www.cfdtlee.com">Visit Shuang's blog</a><br />
+   <!--  <h4> Geometry:  </h4>
+    <button  onclick="geometry(0)"> POINTS</button>
+    <button  onclick="geometry(1)"> LINEs</button>
+    <button  onclick="geometry(2)"> FACES</button>
+
+    <h4> Background:  </h4>
+    <button  onclick="BG(1,0,0)"> Red</button>
+    <button  onclick="BG(0,1,0)"> Green</button>
+    <button  onclick="BG(0,0,1)"> Blue</button>
+    <button  onclick="BG(0.5,0.5,0.5)"> Grey</button>
+    <button  onclick="BG(0,0,0)"> Black</button>
+    <button  onclick="BG(1,1,1)"> White</button>
+
+    <div>
+    <h4>
+    Click on the left mouse button and move the coursor to rotate
+    </h4>
+    <button  onclick="redraw()"> Go Back! </button>
+    </div>
+
+ <div>
+        <h3>
+          <div id="title"> code09.html COMMENTS</div>
+        </h3>
+        <h5>
+           A simple 3D rendering of cube using gl elemenntary array
+	  </h5> 
+  </div>
+
+  
+    --> 
 
 </body>
 
 </html>
+

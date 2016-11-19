@@ -229,7 +229,7 @@ function Sphere(radius, numSlices, numStacks, color) {
     this.vertexIndexBuffer.itemSize = 1;
     this.vertexIndexBuffer.numItems = indices.length;
 }
-
+var debug;
 function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
     var vertices = [];
     var colors = [];
@@ -245,7 +245,10 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
             var y = height / numStacks * i - height/2;
             var z = r * Math.sin(thita);
             vertices = vertices.concat([x, y, z]);
-            normalData = normalData.concat([Math.sin(thita), Math.cos(thita), 0]);
+            var nx = Math.cos(thita) * height / Math.sqrt(height * height + (baseRadius - topRadius) * (baseRadius - topRadius));
+            var ny = (baseRadius - topRadius) / Math.sqrt(height * height + (baseRadius - topRadius) * (baseRadius - topRadius));
+            var nz = Math.sin(thita) * height / Math.sqrt(height * height + (baseRadius - topRadius) * (baseRadius - topRadius));
+            normalData = normalData.concat([nx, ny, nz]);
             colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
         }
     }
@@ -259,21 +262,52 @@ function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {
         }
     }
 
-    // up & down
-    // vertices = vertices.concat([0, -height/2, 0]);
-    // vertices = vertices.concat([0, height/2, 0]); 
-    // colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(1), 1.0]);
-    // colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(-1), 1.0]);
-    // for (var i = 0; i < numSlices; i++) {
-    //     var a = vertices.length / 3 - 2;
-    //     var b = i;
-    //     var c = (i + 1) % numSlices;
-    //     var a2 = vertices.length / 3 - 1;
-    //     var b2 = vertices.length / 3 - 2 - numSlices + i;
-    //     var c2 = vertices.length / 3 - 2 - numSlices + (i + 1) % numSlices;
-    //     indices = indices.concat([a, b, c]);
-    //     indices = indices.concat([a2, b2, c2]);
-    // }
+    // up    
+    // vertices, color, normal
+    for (var i = 0; i < numSlices; i++) {
+        var r = baseRadius;
+        var thita = degToRad(360 / numSlices * i);
+        var x = r * Math.cos(thita);
+        var y = height/2;
+        var z = r * Math.sin(thita);
+        vertices = vertices.concat([x, y, z]);
+        normalData = normalData.concat([0, 1, 0]);
+        colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
+    }
+    vertices = vertices.concat([0, height/2, 0]); 
+    colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(-1), 1.0]);
+    normalData = normalData.concat([0, 1, 0]);
+    // indices
+    for (var i = 0; i < numSlices; i++) {
+        var a = vertices.length / 3 - 1;
+        var b = vertices.length / 3 - 1 - numSlices + i;
+        var c = vertices.length / 3 - 1 - numSlices + (i + 1) % numSlices;
+        indices = indices.concat([a, b, c]);
+    }
+    debug_indices = indices;
+    debug_vertices = vertices;
+    // down
+    // vertices
+    for (var i = 0; i < numSlices; i++) {
+        var r = topRadius;
+        var thita = degToRad(360 / numSlices * i);
+        var x = r * Math.cos(thita);
+        var y = -height/2;
+        var z = r * Math.sin(thita);
+        vertices = vertices.concat([x, y, z]);
+        normalData = normalData.concat([0, -1, 0]);
+        colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
+    }
+    vertices = vertices.concat([0, -height/2, 0]);
+    colors = colors.concat([1.0*Math.abs(0), 1*Math.abs(0), 1*Math.abs(1), 1.0]);
+    normalData = normalData.concat([0, -1, 0]);
+    // indices
+    for (var i = 0; i < numSlices; i++) {
+        var a = vertices.length / 3 - 1;
+        var b = vertices.length / 3 - 1 - numSlices + i;
+        var c = vertices.length / 3 - 1 - numSlices + (i + 1) % numSlices;
+        indices = indices.concat([a, b, c]);
+    }
 
     this.vertexPositionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexPositionBuffer);

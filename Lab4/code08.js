@@ -14,11 +14,14 @@ var draw_type=2;
   var light_ambient = [1,1,1,1]; 
   var light_diffuse = [.8,.8,.8,1];
   var light_specular = [1,1,1,1]; 
-  var light_pos = [0,0,0,1];   // eye space position 
+  var light_x = 0;
+  var light_y = 0;
+  var light_z = 0;
+  var light_pos = [light_x,light_y,light_z,1];   // eye space position 
 
-  var mat_ambient = [0.1, 0.1, 0.1, 1]; 
+  var mat_ambient = [0.4, 0.4, 0.4, 1]; 
   var mat_diffuse= [1, 1, 0, 1]; 
-  var mat_specular = [.5, .5, .5,1]; 
+  var mat_specular = [.8, .8, .8,1]; 
   var mat_shine = [50]; 
 
 //////////// Init OpenGL Context etc. ///////////////
@@ -114,10 +117,10 @@ function initBuffers() {
     ground = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
     sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
     // sphere = new Sphere(4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
-    sylinder = new Sylinder(2, 3, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
+    sylinder = new Sylinder(1, 1.5, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
     cube = new Cube(1);
-    wheel = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
-    cannon = new Sylinder(1, 1, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
+    wheel = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
+    cannon = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
     
 }
 
@@ -287,7 +290,9 @@ function initSQBuffers() {
 
         gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, nMatrix);	
 
-        gl.uniform4f(shaderProgram.light_posUniform,light_pos[0], light_pos[1], light_pos[2], light_pos[3]);  
+
+        // gl.uniform4f(shaderProgram.light_posUniform,light_pos[0], light_pos[1], light_pos[2], light_pos[3]);  
+        gl.uniform4f(shaderProgram.light_posUniform,light_x, light_y, light_z, light_pos[3]);  
         gl.uniform4f(shaderProgram.ambient_coefUniform, mat_ambient[0], mat_ambient[1], mat_ambient[2], 1.0); 
         gl.uniform4f(shaderProgram.diffuse_coefUniform, mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], 1.0); 
         gl.uniform4f(shaderProgram.specular_coefUniform, mat_specular[0], mat_specular[1], mat_specular[2],1.0); 
@@ -342,12 +347,10 @@ function initSQBuffers() {
     function handleKeys() {
         if (currentlyPressedKeys[37]) {
             // Left cursor key
-            // moveDegree += 1;
             mat4.rotate(moveMatrix, degToRad(1), [0, 1, 0]);
         }
         if (currentlyPressedKeys[39]) {
             // Right cursor key
-            // moveDegree -= 1;
             mat4.rotate(moveMatrix, degToRad(-1), [0, 1, 0]);
         }
         if (currentlyPressedKeys[38]) {
@@ -362,24 +365,30 @@ function initSQBuffers() {
         }
         if (currentlyPressedKeys[87]) {
             // w
-            if (cannonUD < 70) {
-                cannonUD += 1;
-            }
+            light_y += 0.1;
         }
         if (currentlyPressedKeys[83]) {
             // s
-            if (cannonUD > 0) {
-                cannonUD -= 1;
-            }
+            light_y -= 0.1;
         }
         if (currentlyPressedKeys[65]) {
             // a
-            cannonLR += 1;
+            light_x -= 0.1;
         }
         if (currentlyPressedKeys[68]) {
             // d
-            cannonLR -= 1;
+            light_x += 0.1;
         }
+
+        if (currentlyPressedKeys[81]) {
+            // q
+            light_z -= 0.1;
+        }
+        if (currentlyPressedKeys[69]) {
+            // e
+            light_z += 0.1;
+        }
+
 
         if (currentlyPressedKeys[32]) {
             if (bumbPosition > 3) {
@@ -387,19 +396,17 @@ function initSQBuffers() {
             }
         }
 
-        // if (currentlyPressedKeys[85]) {
-        //     // u
-        //     if (windowY < 0.0) {
-        //         windowY += 0.1;
-        //     }
-        // }
+        if (currentlyPressedKeys[85]) {
+            // u
+            if (mat_shine[0] > 1) {
+                mat_shine[0] -= 1;
+            }
+        }
 
-        // if (currentlyPressedKeys[74]) {
-        //     // j
-        //     if (windowY > -2.0) {
-        //         windowY -= 0.1;
-        //     }
-        // }
+        if (currentlyPressedKeys[74]) {
+            // j
+            mat_shine[0] += 1;
+        }
     }
 
     var mouseDown = false;
@@ -434,7 +441,7 @@ function initSQBuffers() {
         var deltaX = newX - lastMouseX
         var deltaY = newY - lastMouseY;
         var newChangeMatrix = mat4.create();
-        console.log(event.button);
+        // console.log(event.button);
         if (event.button == 0) {
             mat4.identity(newChangeMatrix);
             mat4.rotate(newChangeMatrix, degToRad(deltaX / 5), [0, 1, 0]);
@@ -472,13 +479,14 @@ function initSQBuffers() {
       	mat4.lookAt(camPos, camTar, camUp, vMatrix);	// set up the view matrix, multiply into the modelview matrix
 
         mat4.identity(mMatrix);	
+
+
+
       	mat4.translate(mMatrix, [0.0, 0.0, -2.0]);
         // mMatrix = mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]); 
         // mMatrix = mat4.rotate(mMatrix, degToRad(-Z_angle), [0, 0, 1]);   // now set up the model matrix
         mat4.translate(mMatrix, [0.0, 0.0, -5.0]);
         mat4.multiply(mMatrix, sceneChangeMatrix);
-
-        
         
         // ground
         mvPushMatrix();
@@ -495,50 +503,45 @@ function initSQBuffers() {
         // tank body
         mvPushMatrix();
         // mat4.rotate(mMatrix, degToRad(rsylinder), [1, 0, 0]);
-        mvPushMatrix();
-        mat4.translate(mMatrix, [0, 0.5, 0]);
-        mat4.scale(mMatrix, [2, 2, 2]);
-        drawObject(sphere);
-        mvPopMatrix();
         mat4.scale(mMatrix, [5, 1, 3]);
         drawObject(cube);
         mvPopMatrix();
 
-        // // base
-        // mvPushMatrix();
-        // mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
-        // mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
+        // base
+        mvPushMatrix();
+        mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
+        mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
         // mat4.rotate(mMatrix, degToRad(30), [0, 1, 0]);
-        // drawObject(sylinder);
-        // mvPushMatrix();
-        // mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
-        // mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
-        // mat4.translate(mMatrix, [0.2, 2, 0]);
-        // // mat4.rotate(mMatrix, degToRad(30), [0, -1, 0]);
-        // // mat4.translate(mMatrix, [0, 0.5, 0]);
-        // // mat4.rotate(mMatrix, degToRad(90 - 20), [0, 0, -1]);
-        // // mat4.translate(mMatrix, [0, -0.5, 0]);
-        // mat4.scale(mMatrix, [1, 3, 1]);
-        // drawObject(cannon);
-        // mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
-        // mvPushMatrix();
-        // mat4.scale(mMatrix, [1/3, 1, 1]);
-        // mat4.translate(mMatrix, [bumbPosition, 0, 0]);
-        // mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
-        // drawObject(sphere);
-        // mvPopMatrix();
-        // mvPopMatrix();
-        // mvPopMatrix();
+        drawObject(sylinder);
+        mvPushMatrix();
+        mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
+        mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
+        mat4.translate(mMatrix, [0.2, 2, 0]);
+        // mat4.rotate(mMatrix, degToRad(30), [0, -1, 0]);
+        // mat4.translate(mMatrix, [0, 0.5, 0]);
+        // mat4.rotate(mMatrix, degToRad(90 - 20), [0, 0, -1]);
+        // mat4.translate(mMatrix, [0, -0.5, 0]);
+        mat4.scale(mMatrix, [1, 3, 1]);
+        drawObject(cannon);
+        mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
+        mvPushMatrix();
+        mat4.scale(mMatrix, [1/3, 1, 1]);
+        mat4.translate(mMatrix, [bumbPosition, 0, 0]);
+        mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
+        drawObject(sphere);
+        mvPopMatrix();
+        mvPopMatrix();
+        mvPopMatrix();
 
         // wheels
-        // for (var i = 0; i < 5; i++) {
-        //     mvPushMatrix();
-        //     // mat4.translate(mMatrix, [i, -1.0, 0.0]);
-        //     mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
-        //     mat4.scale(mMatrix, [1.0, 3.0, 1.0]);
-        //     drawObject(wheel);
-        //     mvPopMatrix();
-        // }       
+        for (var i = 0; i < 5; i++) {
+            mvPushMatrix();
+            mat4.translate(mMatrix, [i-2, -1.0, 0.0]);
+            mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
+            mat4.scale(mMatrix, [1.0, 3.0, 1.0]);
+            drawObject(wheel);
+            mvPopMatrix();
+        }
 
 
 	
@@ -562,9 +565,9 @@ function initSQBuffers() {
 
        setMatrixUniforms();   // pass the modelview mattrix and projection matrix to the shader 
 
-	if (draw_type ==1) gl.drawArrays(gl.LINE_LOOP, 0, cylinderVertexPositionBuffer.numItems);	
-        else if (draw_type ==0) gl.drawArrays(gl.POINTS, 0, cylinderVertexPositionBuffer.numItems);
-	else if (draw_type==2) gl.drawElements(gl.TRIANGLES, cylinderVertexIndexBuffer.numItems , gl.UNSIGNED_SHORT, 0);
+	// if (draw_type ==1) gl.drawArrays(gl.LINE_LOOP, 0, cylinderVertexPositionBuffer.numItems);	
+ //        else if (draw_type ==0) gl.drawArrays(gl.POINTS, 0, cylinderVertexPositionBuffer.numItems);
+	// else if (draw_type==2) gl.drawElements(gl.TRIANGLES, cylinderVertexIndexBuffer.numItems , gl.UNSIGNED_SHORT, 0);
 	
 	/*
 	if (draw_type ==1) gl.drawArrays(gl.LINE_LOOP, 0, squareVertexPositionBuffer.numItems);	
