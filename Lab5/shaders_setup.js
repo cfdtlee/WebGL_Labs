@@ -68,7 +68,9 @@
         shaderProgram.vMatrixUniform = gl.getUniformLocation(shaderProgram, "uVMatrix");
         shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
         shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");    
+        shaderProgram.v2wMatrixUniform = gl.getUniformLocation(shaderProgram, "uV2WMatrix");        
 
+        shaderProgram.cubeMapSampler = gl.getUniformLocation(shaderProgram, "uCubeSampler");
         shaderProgram.light_posUniform = gl.getUniformLocation(shaderProgram, "light_pos");
         shaderProgram.ambient_coefUniform = gl.getUniformLocation(shaderProgram, "ambient_coef");   
         shaderProgram.diffuse_coefUniform = gl.getUniformLocation(shaderProgram, "diffuse_coef");
@@ -79,7 +81,7 @@
         shaderProgram.light_diffuseUniform = gl.getUniformLocation(shaderProgram, "light_diffuse");
         shaderProgram.light_specularUniform = gl.getUniformLocation(shaderProgram, "light_specular");   
 
-
+        shaderProgram.shouldDrawObject = gl.getUniformLocation(shaderProgram, "uDrawObject");
 
     }
 

@@ -46,6 +46,18 @@ function Plane(size, color) {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.vertexIndices), gl.STATIC_DRAW);
     this.vertexIndexBuffer.itemSize = 1;
     this.vertexIndexBuffer.numItems = this.vertexIndices.length;
+
+    var textureCoords = [
+        0.0, 1.0, 
+        0.0, 0.0, 
+        1.0, 0.0, 
+        1.0, 1.0
+    ];
+    this.vertexTextureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTextureCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+    this.vertexTextureCoordBuffer.itemSize = 2;
+    this.vertexTextureCoordBuffer.numItems = 4;
 }
 
 function Cube(size, color) {
@@ -179,6 +191,7 @@ function Sphere(radius, numSlices, numStacks, color) {
     var colors = [];
     var indices = [];
     var normalData = [];
+    var textureCoords = [];
     var divideNum = 6;
     for (var i = 0; i < numStacks + 1; i++) {
         for (var j = 0; j < numSlices; j++) {
@@ -188,10 +201,13 @@ function Sphere(radius, numSlices, numStacks, color) {
             var x = Math.cos(thita) * Math.cos(fi);
             var y = Math.sin(fi);
             var z = Math.sin(thita) * Math.cos(fi);
+            var u = j / numSlices;
+            var v = i / numStacks;
             vertices = vertices.concat([x * r, y * r, z * r]);
             normalData = normalData.concat([x, y, z]);
             colors = colors.concat([1.0*Math.abs(x), 1*Math.abs(y), 1*Math.abs(z), 1.0]);
             // colors = colors.concat(color);
+            textureCoords = textureCoords.concat([u, v]);
         }
     }
     
@@ -228,6 +244,12 @@ function Sphere(radius, numSlices, numStacks, color) {
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
     this.vertexIndexBuffer.itemSize = 1;
     this.vertexIndexBuffer.numItems = indices.length;
+
+    this.vertexTextureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexTextureCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+    this.vertexTextureCoordBuffer.itemSize = 2;
+    this.vertexTextureCoordBuffer.numItems = textureCoords.length / 2;
 }
 var debug;
 function Sylinder(baseRadius, topRadius, height, numSlices, numStacks, color) {

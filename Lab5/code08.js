@@ -1,111 +1,38 @@
 
 //////////////////////////////////////////////////////////////////
-//
-//  This example is similar to code03.html, but I am showing you how to
-//  use gl elemenntary array, i.e, triangle indices, to draw faces 
-//
 
 var gl;
 var shaderProgram;
 var draw_type=2;
 
 
-  // set up the parameters for lighting 
-  var light_ambient = [1,1,1,1]; 
-  var light_diffuse = [.8,.8,.8,1];
-  var light_specular = [1,1,1,1]; 
-  var light_x = 0;
-  var light_y = 0;
-  var light_z = 0;
-  var light_pos = [light_x,light_y,light_z,1];   // eye space position 
+// set up the parameters for lighting 
+var light_ambient = [1,1,1,1]; 
+var light_diffuse = [.8,.8,.8,1];
+var light_specular = [1,1,1,1]; 
+var light_x = 0;
+var light_y = 0;
+var light_z = 0;
+var light_pos = [light_x,light_y,light_z,1];   // eye space position 
 
-  var mat_ambient = [0.4, 0.4, 0.4, 1]; 
-  var mat_diffuse= [1, 1, 0, 1]; 
-  var mat_specular = [.8, .8, .8,1]; 
-  var mat_shine = [50]; 
+var mat_ambient = [0.4, 0.4, 0.4, 1]; 
+var mat_diffuse= [1, 1, 0, 1]; 
+var mat_specular = [.8, .8, .8,1]; 
+var mat_shine = [50]; 
 
 //////////// Init OpenGL Context etc. ///////////////
 
-    function initGL(canvas) {
-        try {
-            gl = canvas.getContext("experimental-webgl");
-            gl.viewportWidth = canvas.width;
-            gl.viewportHeight = canvas.height;
-        } catch (e) {
-        }
-        if (!gl) {
-            alert("Could not initialise WebGL, sorry :-(");
-        }
+function initGL(canvas) {
+    try {
+        gl = canvas.getContext("experimental-webgl");
+        gl.viewportWidth = canvas.width;
+        gl.viewportHeight = canvas.height;
+    } catch (e) {
     }
-
-    ///////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////
-
-    var squareVertexPositionBuffer;
-    var squareVertexColorBuffer;
-    var squareVertexIndexBuffer;
-
-    var cylinderVertexPositionBuffer;
-    var cylinderVertexNormalBuffer;
-    var cylinderVertexColorBuffer;
-    var cylinderVertexIndexBuffer; 
-
-
-////////////////    Initialize VBO  ////////////////////////
-
-var cyverts = [];
-var cynormals = []; 
-var cycolors = []; 
-var cyindicies = [];
-
-function InitCylinder(nslices, nstacks,  r,  g,  b) 
-{
-  var nvertices = nslices * nstacks;
-    
-  var Dangle = 2*Math.PI/(nslices-1); 
-
-  for (j =0; j<nstacks; j++)
-    for (i=0; i<nslices; i++) {
-      var idx = j*nslices + i; // mesh[j][i] 
-      var angle = Dangle * i; 
-      cyverts.push(Math.cos(angle)); 
-      cyverts.push(Math.sin(angle)); 
-      cyverts.push(j*3.0/(nstacks-1)-1.5);
-
-      cynormals.push(Math.cos(angle)); 
-      cynormals.push(Math.sin(angle));
-      cynormals.push(0.0); 
-
-      cycolors.push(Math.cos(angle)); 
-      cycolors.push(Math.sin(angle)); 
-      cycolors.push(j*1.0/(nstacks-1));	
-      cycolors.push(1.0); 
-    }
-  // now create the index array 
-
-  nindices = (nstacks-1)*6*(nslices+1); 
-
-  for (j =0; j<nstacks-1; j++)
-    for (i=0; i<=nslices; i++) {
-      var mi = i % nslices;
-      var mi2 = (i+1) % nslices;
-      var idx = (j+1) * nslices + mi;	
-      var idx2 = j*nslices + mi; // mesh[j][mi] 
-      var idx3 = (j) * nslices + mi2;
-      var idx4 = (j+1) * nslices + mi;
-      var idx5 = (j) * nslices + mi2;
-      var idx6 = (j+1) * nslices + mi2;
-	
-      cyindicies.push(idx); 
-      cyindicies.push(idx2);
-      cyindicies.push(idx3); 
-      cyindicies.push(idx4);
-      cyindicies.push(idx5); 
-      cyindicies.push(idx6);
+    if (!gl) {
+        alert("Could not initialise WebGL, sorry :-(");
     }
 }
-
-
 
 var sphere;
 var sylinder;
@@ -117,11 +44,11 @@ var cube_up;
 var cube_faces = [];
 
 function initBuffers() {
-    // ground = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
-    sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
-    // // sphere = new Sphere(4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
+    ground = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
+    // sphere = new Sphere(0.4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
+    sphere = new Sphere(4, 16, 16, [0.3, 0.6, 0.1, 1.0]);
     sylinder = new Sylinder(1, 1.5, 1.5, 6, 6, [0.3, 0.6, 0.1, 1.0]);
-    // cube = new Cube(1);
+    cube = new Cube(1);
     // wheel = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
     // cannon = new Sylinder(0.5, 0.5, 1, 12, 12, [0.3, 1, 0.3, 1.0]);
     var textureCoords = [
@@ -132,11 +59,11 @@ function initBuffers() {
     ];
     for (var i = 0; i < 6; i++) {
         var cube_face = new Plane(1, [0.2, 0.1, 0.13, 1.0]);
-        cube_face.vertexTextureCoordBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, cube_face.vertexTextureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
-        cube_face.vertexTextureCoordBuffer.itemSize = 2;
-        cube_face.vertexTextureCoordBuffer.numItems = 4;
+        // cube_face.vertexTextureCoordBuffer = gl.createBuffer();
+        // gl.bindBuffer(gl.ARRAY_BUFFER, cube_face.vertexTextureCoordBuffer);
+        // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoords), gl.STATIC_DRAW);
+        // cube_face.vertexTextureCoordBuffer.itemSize = 2;
+        // cube_face.vertexTextureCoordBuffer.numItems = 4;
         cube_face.texture = textures[i];
         cube_faces.push(cube_face);
     }
@@ -168,7 +95,24 @@ function initBuffers() {
         }
     }
 
-function setObjectTexture(obj) {
+function drawEnvironmentElement(obj) {
+    setEnvironmentTexture(obj);
+    drawElement(obj);
+}
+
+function drawObject(obj) {
+    gl.uniform1i(shaderProgram.shouldDrawObject, true);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubemapTexture);//cfdtlee
+    gl.uniform1i(shaderProgram.cubeMapSampler, 1);
+    // bind texture coord
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexTextureCoordBuffer);
+    gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, obj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    drawElement(obj);
+}
+
+function setEnvironmentTexture(obj) {
+    gl.uniform1i(shaderProgram.shouldDrawObject, false);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, obj.texture);
     gl.uniform1i(shaderProgram.samplerUniform, 0);
@@ -177,19 +121,19 @@ function setObjectTexture(obj) {
     gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, obj.vertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
 }
 
-function drawObject(obj) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexPositionBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, obj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        
-        gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexColorBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, obj.vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexNormalBuffer);
-        gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, obj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.vertexIndexBuffer); 
+function drawElement(obj) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexPositionBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, obj.vertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexColorBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, obj.vertexColorBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, obj.vertexNormalBuffer);
+    gl.vertexAttribPointer(shaderProgram.vertexNormalAttribute, obj.vertexNormalBuffer.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, obj.vertexIndexBuffer); 
 
-        setMatrixUniforms();
-        gl.drawElements(gl.TRIANGLES, obj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
+    setMatrixUniforms();
+    gl.drawElements(gl.TRIANGLES, obj.vertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+}
 
 
 var cubemapTexture;
@@ -206,10 +150,10 @@ function initCubeMap() {
     var cubeFaces = [
         ["cube_right.png", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
         ["cube_left.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
-        ["cube_up.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+        ["cube_up_1.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
         ["cube_down.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
-        ["cube_front.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
-        ["cube_back.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]
+        ["cube_back.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+        ["cube_front.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]
     ];
 
     for (var i = 0; i < cubeFaces.length; i++) {
@@ -224,7 +168,38 @@ function initCubeMap() {
             }
         } (cubemapTexture, cubeFaces[i][1], image);
     }
+}
 
+// function initCubeMap() {
+//     cubemapTexture = gl.createTexture();
+//     cubemapTexture.image = new Image();
+//     cubemapTexture.image.onload = function() { handleCubemapTextureLoaded(cubemapTexture); }
+//     cubemapTexture.image.src = "cube_up.png";
+// //    cubemapTexture.image.src = "earth.png";        
+//     console.log("loading cubemap texture....") 
+// }    
+
+function handleCubemapTextureLoaded(texture) {
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.REPEAT); 
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    // gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR); 
+
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);
+    gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
+          texture.image);    
+    console.log("after loading cubemap texture....") 
 }    
 
 function handleLoadedTexture(texture) {
@@ -240,7 +215,7 @@ function handleLoadedTexture(texture) {
 }
 
 var textures = [];
-var imageList = ["cube_up.png", "cube_down.png", "cube_left.png", "cube_right.png", "cube_front.png", "cube_back.png"];
+var imageList = ["cube_up_1.png", "cube_down.png", "cube_left.png", "cube_right.png", "cube_front.png", "cube_back.png"];
 var t1, t2, t3, t4, t5, t6;
 function initTexture() {
     // for (var i = 0; i < imageList.length; i++) {
@@ -308,6 +283,7 @@ var mMatrix = mat4.create();  // model matrix
 var vMatrix = mat4.create(); // view matrix
 var pMatrix = mat4.create();  //projection matrix
 var nMatrix = mat4.create();  // normal matrix
+var v2wMatrix = mat4.create();
 var Z_angle = .0;
 
 var mMatrixStack = [];
@@ -330,6 +306,13 @@ function setMatrixUniforms() {
     gl.uniformMatrix4fv(shaderProgram.vMatrixUniform, false, vMatrix);
     gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
 
+    // mat4.multiply(mMatrix, sceneChangeMatrix);
+
+    mat4.identity(v2wMatrix);
+    v2wMatrix = mat4.multiply(v2wMatrix, vMatrix);
+    v2wMatrix = mat4.transpose(v2wMatrix);
+    gl.uniformMatrix4fv(shaderProgram.v2wMatrixUniform, false, v2wMatrix);  
+
     mat4.identity(nMatrix); 
     nMatrix = mat4.multiply(nMatrix, vMatrix);
     nMatrix = mat4.multiply(nMatrix, mMatrix);  
@@ -337,7 +320,7 @@ function setMatrixUniforms() {
     nMatrix = mat4.transpose(nMatrix); 
 
 
-    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, nMatrix);	
+    gl.uniformMatrix4fv(shaderProgram.nMatrixUniform, false, nMatrix);  
 
 
     // gl.uniform4f(shaderProgram.light_posUniform,light_pos[0], light_pos[1], light_pos[2], light_pos[3]);  
@@ -524,77 +507,90 @@ function drawScene() {
     gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  	pMatrix = mat4.perspective(90, 1.0, 0.1, 1000, pMatrix);  // set up the projection matrix 
-  	mat4.lookAt(camPos, camTar, camUp, vMatrix);	// set up the view matrix, multiply into the modelview matrix
+    pMatrix = mat4.perspective(90, 1.0, 0.1, 1000, pMatrix);  // set up the projection matrix 
+    mat4.lookAt(camPos, camTar, camUp, vMatrix);    // set up the view matrix, multiply into the modelview matrix
 
-    mat4.identity(mMatrix);	
+    mat4.identity(mMatrix); 
 
 
-  	mat4.translate(mMatrix, [0.0, 0.0, -2.0]);
+    mat4.translate(mMatrix, [0.0, 0.0, -2.0]);
     // mMatrix = mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]); 
     // mMatrix = mat4.rotate(mMatrix, degToRad(-Z_angle), [0, 0, 1]);   // now set up the model matrix
     mat4.translate(mMatrix, [0.0, 0.0, -5.0]);
-    mat4.multiply(mMatrix, sceneChangeMatrix);
+    mat4.multiply(vMatrix, sceneChangeMatrix);
     
 
 
     // up
     mvPushMatrix();
     mat4.translate(mMatrix, [0, 200, 0]);
-    mat4.rotate(mMatrix, degToRad(180), [1, 0, 1]);
+    // mat4.rotate(mMatrix, degToRad(180), [0, 0, 1]);
+    // mat4.rotate(mMatrix, degToRad(90), [0, 1, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[0]);
-    drawObject(cube_faces[0]);
+    drawEnvironmentElement(cube_faces[0]);
+    // drawElement(cube_faces[0]);
+    // drawElement(ground);
+    mvPopMatrix();
+
+
+    // test
+    mvPushMatrix();
+    // mat4.translate(mMatrix, [0, -100, 0]);
+    // mat4.rotate(mMatrix, degToRad(180), [1, 0, 1]);
+    // mat4.scale(mMatrix, [4, 4, 4]);
+    // setEnvironmentTexture(cube_faces[0]);
+    // gl.uniform1i(shaderProgram.shouldDrawObject, true);
+    // drawObject(cube);
+    // drawElement(sylinder);
+    // drawObject(ground);
+    drawObject(sphere);
     mvPopMatrix();
 
     // down
     mvPushMatrix();
     mat4.translate(mMatrix, [0, -200, 0]);
+    mat4.rotate(mMatrix, degToRad(-180), [1, 0, 0]);
     mat4.rotate(mMatrix, degToRad(-90), [0, 1, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[1]);
-    drawObject(cube_faces[1]);
+    drawEnvironmentElement(cube_faces[1]);
     mvPopMatrix();
     
     // left
     mvPushMatrix();
     mat4.translate(mMatrix, [-200, 0, 0]);
-    mat4.rotate(mMatrix, degToRad(-90), [0, 0, 1]);
-    mat4.rotate(mMatrix, degToRad(90), [0, 1, 0]);
-    // mat4.rotate(mMatrix, degToRad(-90), [1, 0, 0]);
+    mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
+    mat4.rotate(mMatrix, degToRad(-90), [0, 1, 0]);
+    // mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[2]);
-    drawObject(cube_faces[2]);
+    drawEnvironmentElement(cube_faces[2]);
     mvPopMatrix();
 
     // right
     mvPushMatrix();
     mat4.translate(mMatrix, [200, 0, 0]);
-    mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
-    mat4.rotate(mMatrix, degToRad(-90), [0, 1, 0]);
+    mat4.rotate(mMatrix, degToRad(-90), [0, 0, 1]);
+    mat4.rotate(mMatrix, degToRad(90), [0, 1, 0]);
+    // mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[3]);
-    drawObject(cube_faces[3]);
+    drawEnvironmentElement(cube_faces[3]);
     mvPopMatrix();
 
     // front
     mvPushMatrix();
-    mat4.translate(mMatrix, [0, 0, 200]);
+    mat4.translate(mMatrix, [0, 0, -200]);
     mat4.rotate(mMatrix, degToRad(-90), [1, 0, 0]);
     mat4.rotate(mMatrix, degToRad(180), [0, 1, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[4]);
-    drawObject(cube_faces[4]);
+    drawEnvironmentElement(cube_faces[4]);
     mvPopMatrix();
 
     // back
     mvPushMatrix();
-    mat4.translate(mMatrix, [0, 0, -200]);
+    mat4.translate(mMatrix, [0, 0, 200]);
     mat4.rotate(mMatrix, degToRad(90), [1, 0, 0]);
     // mat4.rotate(mMatrix, degToRad(180), [0, 0, 1]);
     mat4.scale(mMatrix, [400, 1, 400]);
-    setObjectTexture(cube_faces[5]);
-    drawObject(cube_faces[5]);
+    drawEnvironmentElement(cube_faces[5]);
     mvPopMatrix();
 
     mat4.multiply(mMatrix, moveMatrix);
@@ -602,7 +598,7 @@ function drawScene() {
     // tank body
     mvPushMatrix();
     // mat4.rotate(mMatrix, degToRad(rsylinder), [1, 0, 0]);
-    mat4.scale(mMatrix, [5, 1, 3]);
+    // mat4.scale(mMatrix, [500, 100, 300]);
     // drawObject(cube);
     mvPopMatrix();
 
@@ -611,7 +607,7 @@ function drawScene() {
     mat4.rotate(mMatrix, degToRad(cannonLR), [0, 1, 0]);
     mat4.translate(mMatrix, [0.0, 2.5/2, 0.0]);        
     // mat4.rotate(mMatrix, degToRad(30), [0, 1, 0]);
-    drawObject(sylinder);
+    // drawObject(sylinder);
     mvPushMatrix();
     mat4.rotate(mMatrix, degToRad(cannonUD), [0, 0, 1]);
     mat4.rotate(mMatrix, degToRad(-80), [0, 0, 1]);
@@ -625,7 +621,7 @@ function drawScene() {
     mat4.rotate(mMatrix, degToRad(90), [0, 0, 1]);
     mvPushMatrix();
     mat4.scale(mMatrix, [1/3, 1, 1]);
-    mat4.translate(mMatrix, [bumbPosition, 0, 0]);
+    // mat4.translate(mMatrix, [bumbPosition, 0, 0]);
     mat4.rotate(mMatrix, degToRad(rPyramid), [0, 1, 0]);
     // drawObject(sphere);
     mvPopMatrix();
@@ -640,21 +636,18 @@ function drawScene() {
 
 function webGLStart() {
     var canvas = document.getElementById("code03-canvas");
-    canvas.width = screen.width;
-    canvas.height = screen.height;
+    // canvas.width = screen.width;
+    // canvas.height = screen.height;
     initGL(canvas);
     initShaders();
 
-  	gl.enable(gl.DEPTH_TEST); 
+    gl.enable(gl.DEPTH_TEST); 
     initTexture();
     initCubeMap();
     initBuffers();
     
 
     gl.clearColor(0.2, 0.2, 0.2, 1.0);
-    console.log('start! ');
-    console.error('I hope no error ....');
-
 
    // document.addEventListener('mousedown', onDocumentMouseDown,false); 
 
@@ -666,6 +659,7 @@ function webGLStart() {
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
 
+    // drawScene();
     tick();
 }
 var lastTime = 0;
