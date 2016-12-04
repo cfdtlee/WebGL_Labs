@@ -151,7 +151,7 @@ function initCubeMap() {
         ["cube_right.png", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
         ["cube_left.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
         ["cube_up_1.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
-        ["cube_down.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+        ["cube_down_1.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
         ["cube_back.png", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
         ["cube_front.png", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]
     ];
@@ -215,7 +215,7 @@ function handleLoadedTexture(texture) {
 }
 
 var textures = [];
-var imageList = ["cube_up_1.png", "cube_down.png", "cube_left.png", "cube_right.png", "cube_front.png", "cube_back.png"];
+var imageList = ["cube_up_1.png", "cube_down_1.png", "cube_left.png", "cube_right.png", "cube_front.png", "cube_back.png"];
 var t1, t2, t3, t4, t5, t6;
 function initTexture() {
     // for (var i = 0; i < imageList.length; i++) {
@@ -550,7 +550,7 @@ function drawScene() {
     mvPushMatrix();
     mat4.translate(mMatrix, [0, -200, 0]);
     mat4.rotate(mMatrix, degToRad(-180), [1, 0, 0]);
-    mat4.rotate(mMatrix, degToRad(-90), [0, 1, 0]);
+    // mat4.rotate(mMatrix, degToRad(-90), [0, 1, 0]);
     mat4.scale(mMatrix, [400, 1, 400]);
     drawEnvironmentElement(cube_faces[1]);
     mvPopMatrix();
